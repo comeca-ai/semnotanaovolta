@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- FICTÍCIO: exemplo para desenvolvimento. Não é nota real. -->
+<nfeProc xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00">
+  <NFe>
+    <infNFe Id="NFe35261011222333000181550010000012341000012345" versao="4.00">
+      <ide><cUF>35</cUF><nNF>1234</nNF><dhEmi>2026-10-09T10:00:00-03:00</dhEmi></ide>
+      <emit>
+        <CNPJ>11222333000181</CNPJ><xNome>Confecções Exemplo Ltda (fictícia)</xNome>
+        <enderEmit><cMun>3509502</cMun><xMun>Campinas</xMun><UF>SP</UF></enderEmit>
+      </emit>
+      <det nItem="1">
+        <prod><cProd>VST-01</cProd><xProd>Vestido de malha sintética</xProd><NCM>61044300</NCM><vProd>12450.00</vProd></prod>
+        <imposto><ICMS/></imposto>
+      </det>
+      <total><ICMSTot><vNF>12450.00</vNF></ICMSTot></total>
+    </infNFe>
+  </NFe>
+</nfeProc>
