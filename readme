@@ -1,1 +1,9 @@
-oi
+# A nota sem volta
+
+Cálculo de legado, IBS/CBS e ISS na nota que o escritório já emite. A máquina sugere com artigo e data; o contador confirma e o CRC fica no log. Nome em discussão: anotasemvolta.com.br.
+
+- [Especificação (negócio + técnica)](docs/SPEC.md)
+- [Sugestão de implementação da POC](docs/POC.md)
+- [Perguntas em aberto](docs/PERGUNTAS.md)
+- [Recorte da mesa (decisões)](docs/recorte-da-mesa.md)
+- [Modelos de tela](docs/telas/)
