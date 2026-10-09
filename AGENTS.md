@@ -23,5 +23,7 @@ Leia antes de codar, nesta ordem de precedência:
 - Interface em português, frases curtas e afirmativas, um botão principal por tela.
 
 ## Estado
-- Só documentação; nenhum código ainda.
+- Worker em TypeScript + Hono (JSX no servidor), D1 `anotasemvolta`, R2 `anotasemvolta-xml`. Ver `README` para rodar.
+- Feito: login por link, termo, upload em lote, leitor NF-e/NFS-e, motor por regra (IA desligada), leitura, firma com log imutável, teto do pacote.
+- Falta: retorno de rejeição ("Nota voltou"), indicador de parada, envio de e-mail (Resend), escolhedor por IA para empates.
 - Bloqueio de negócio: primeiro escritório não nomeado (sem ele não há base real, tabela de códigos nem linha de base). Para desenvolver, use dados fictícios em `db/seed/` marcados como fictícios.
