@@ -5,5 +5,21 @@ Cálculo de legado, IBS/CBS e ISS na nota que o escritório já emite. A máquin
 - [Especificação (negócio + técnica)](docs/SPEC.md)
 - [Sugestão de implementação da POC](docs/POC.md)
 - [Perguntas em aberto](docs/PERGUNTAS.md)
-- [Recorte da mesa (decisões)](docs/recorte-da-mesa.md)
+- [Decisões da mesa](docs/decisoes-da-mesa.md)
+- [Recorte da mesa](docs/recorte-da-mesa.md)
 - [Modelos de tela](docs/telas/)
+
+## Rodar localmente
+```bash
+npm install
+npm run db:local      # cria o banco local e coloca os dados fictícios
+npm run dev           # http://localhost:8787
+npm test
+```
+Entre com `contador@exemplo.com.br` ou `dono@exemplo.com.br` (fictícios). Sem e-mail configurado, o link aparece na tela (`.dev.vars` com `MODO_DEV=1`).
+XMLs de exemplo em `db/seed/xml/`.
+
+## Publicar
+Cada push na `main` testa e publica pelo GitHub Actions (`.github/workflows/deploy.yml`).
+Precisa dos segredos `CLOUDFLARE_API_TOKEN` e `CLOUDFLARE_ACCOUNT_ID` no repositório.
+Para o login por e-mail: `npx wrangler secret put RESEND_API_KEY`.

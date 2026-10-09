@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- FICTÍCIO: emitente diferente do CNPJ escolhido. Deve ser recusada no upload. -->
+<nfeProc xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00">
+  <NFe>
+    <infNFe Id="NFe35261099888777000166550010000000011000000010" versao="4.00">
+      <ide><cUF>35</cUF><nNF>1</nNF><dhEmi>2026-10-09T10:00:00-03:00</dhEmi></ide>
+      <emit>
+        <CNPJ>99888777000166</CNPJ>
+        <enderEmit><cMun>3550308</cMun><xMun>São Paulo</xMun><UF>SP</UF></enderEmit>
+      </emit>
+      <det nItem="1">
+        <prod><cProd>X</cProd><xProd>Item</xProd><NCM>61044300</NCM><vProd>100.00</vProd></prod>
+        <imposto><ICMS/></imposto>
+      </det>
+      <total><ICMSTot><vNF>100.00</vNF></ICMSTot></total>
+    </infNFe>
+  </NFe>
+</nfeProc>

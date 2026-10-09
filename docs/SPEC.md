@@ -1,13 +1,13 @@
 # A nota sem volta — Especificação (negócio + técnica)
 
-> Versão 0.2 — 09/10/2026. Fontes: [recorte da mesa](recorte-da-mesa.md) (decisões) e [modelos de tela](telas/).
-> Quando a tela e o recorte divergem, **vale o recorte**. 🔎 = inferência minha; perguntas em [`PERGUNTAS.md`](PERGUNTAS.md).
+> Versão 0.3 — 09/10/2026. Fontes, em ordem de precedência: [decisões da mesa](decisoes-da-mesa.md), [recorte da mesa](recorte-da-mesa.md) e [modelos de tela](telas/).
+> Onde recorte e tela brigavam, valem as decisões. 🔎 = inferência minha; perguntas em [`PERGUNTAS.md`](PERGUNTAS.md).
 > Nome em discussão: **anotasemvolta.com.br**.
 
 ---
 
 ## 1. O que se vende
-Cálculo do **imposto legado** (ICMS/ISS etc. 🔎), de **IBS/CBS** e de **ISS** na nota que o escritório **já emite**.
+Cálculo do **imposto legado** (**ICMS e ISS** no v0; PIS/COFINS e IPI fora), de **IBS/CBS** e de **ISS** na nota que o escritório **já emite**.
 A máquina **sugere, com artigo e data**. O **contador confirma** e o **CRC fica no log**.
 
 O que se compra: **a nota que não volta, com plantão na rejeição de sexta** — "a sexta sem susto".
@@ -35,14 +35,14 @@ Referência de preço × porte (FDC): médias entre R$ 4,8 mi e R$ 300 mi de fat
 
 Regras:
 - R1 Fee **anual**, **vencimento no dia 1**. Preço **escrito**, sem projeto.
-- R2 **Excedente R$ 4 por nota autorizada**, informado **antes** ("escrito antes"). O aviso de estouro aparece **na tela antes da próxima** nota.
-- R3 **Nota rejeitada que o sistema devolveu não conta de novo** (a reemissão da mesma nota não consome pacote).
-- R4 Conta **notas autorizadas**, não notas processadas. 🔎
-- R5 Escala pelo **segundo CNPJ do mesmo dono** (Entrada → Meio), não pelo segundo estado.
-
-⚠️ Divergências a resolver (ver PERGUNTAS):
-- O recorte diz "acima de **12 mil**: R$ 4", mas a tela T4 mostra excedente no **Meio (6.000)**. Proposta: excedente vale **acima do teto de cada pacote**.
-- "Ticket médio R$ 13,5 mil com metade entrada e metade cheio": (9+24)/2 = **16,5**; 13,5 = (9+18)/2 (**entrada + meio**).
+- R2 **Excedente R$ 4 por nota autorizada acima do teto do pacote daquele CNPJ** (2.400, 6.000 ou 12.000), escrito antes. O aviso aparece **na tela antes da próxima** nota.
+- R3 **Nota rejeitada que o sistema devolveu não conta de novo** (a reemissão não consome pacote).
+- R4 Conta **notas autorizadas**.
+- R5 **Renovação**: o 1º CNPJ **não** renova a R$ 9 mil; no dia 1 do 2º ano vai ao **Meio** (R$ 18 mil, 6.000). Os demais CNPJs do mesmo dono **já nascem no Meio**.
+- R6 **Cheio** só é liberado quando a **parada já caiu na semana daquele CNPJ**, SEFAZ e prefeitura separadas. Quem atesta é o **indicador do sistema**, não o vendedor.
+- R7 Escala pelo **segundo CNPJ do mesmo dono**, não pelo segundo estado.
+- R8 Ticket médio de trabalho: **R$ 13,5 mil = (Entrada 9 + Meio 18) / 2**. O Cheio não entra nessa média.
+- R9 Escritório **não recebe comissão** no v0.
 
 ## 4. Tese e prova
 - **Métrica-norte: "parada"** = notas rejeitadas/paradas por SEFAZ ou prefeitura. "Sem parada caindo, não há empresa."
@@ -99,27 +99,33 @@ Linguagem: português curto, afirmativo, sem jargão de compliance.
 - RF06 Recuperar candidatos na base interna por **vigência (data da nota) × UF × município × NCM/serviço**.
 - RF07 O modelo escolhe **um ID da base** ou **não responde**. Saída fechada.
 - RF08 Validação determinística: artigo existe, vigente, cobre o item.
-- RF09 Sugestão de: tributo legado (ICMS/ISS 🔎), **IBS/CBS** (CST, `cClassTrib`, alíquota 🔎), ISS municipal — cada um com **artigo e data**.
+- RF09 Sugestão de: **ICMS e ISS** (legado) e **IBS/CBS** — cada um com **artigo e data**.
+- RF09a IBS/CBS: **CST, `cClassTrib` e alíquota só se estiverem na base**. O valor só é calculado com alíquota da base; **sem alíquota, classifica e não calcula**. Nenhum número vem do modelo.
 
 **Firma e log**
-- RF10 Contador confirma com nome + CRC; pode editar ou recusar.
+- RF10 Contador confirma com **nome + CRC digitados por quem está logado**; pode editar ou recusar. Sem certificado digital e sem consulta do CRC em cadastro oficial no v0 (coberto pelo termo).
+- RF10a **Termo** aceito pelo contador **e** pelo dono **antes do primeiro XML**: o sistema não é parecer; sugestão errada e firmada é responsabilidade de quem assinou. **Sem termo, não sobe nota.**
 - RF11 Log **imutável**: CRC, artigo, data da norma, horário (+ versão da base, hash do XML, usuário, decisão).
 
 **Pacote**
-- RF12 Contador de notas autorizadas por contrato/ano; tetos 2.400 / 6.000 / 12.000.
+- RF12 Contador de notas autorizadas por CNPJ/ano; tetos 2.400 / 6.000 / 12.000; renovação e liberação do Cheio conforme R5–R6.
 - RF13 **Avisar antes** da nota que estoura; registrar Parar/Seguir e o valor do excedente.
 - RF14 Reemissão de nota rejeitada devolvida **não consome** pacote (vínculo nota original ↔ reemissão).
 
 **Rejeição**
-- RF15 Escritório devolve o **retorno da rejeição** (XML/arquivo/texto de retorno) → sistema registra órgão, código, campo.
-- RF16 Tabela código → campo → frase curta; destacar o campo na leitura.
-- RF17 Indicador de **parada** por CNPJ e escritório, SEFAZ e prefeitura separados, por semana.
+- RF15 Rejeição entra pelo **arquivo de retorno que o escritório já guarda**: XML de retorno, se existir; senão **código e órgão colados** (SEFAZ ou prefeitura).
+- RF16 Tabela código → campo → frase curta, **escrita a partir do histórico real do escritório**; destacar o campo na leitura.
+- RF17 Indicador de **parada** por CNPJ e semana, SEFAZ e prefeitura separadas, com **linha de base** = 4 semanas anteriores do mesmo lote de CNPJs. É ele que libera o Cheio (R6).
 
 **Plantão**
-- RF18 Telefone do plantão visível no rodapé e na tela de rejeição. Atendimento humano (fora do sistema).
+- RF18 Telefone do plantão no rodapé e na tela de rejeição. POC: **sexta 18h–22h e sábado 9h–12h**, uma pessoa, resposta na hora dentro da janela. Fora dela, a tela **mostra o horário**, sem prometer SLA.
+
+**Base legal (curadoria)**
+- RF19 Curadoria feita pelo **tributarista do time**, não pelo modelo. Toda portaria que mexa em IBS/CBS ou ISS dos municípios do piloto entra **antes do dia útil seguinte**, com data de vigência. Site de prefeitura não é fonte na hora.
+- RF20 Cobertura: **estado do primeiro escritório que ceder XML** e **municípios dos CNPJs dele** — não o mapa do Brasil. Sem escritório nomeado, a base não começa.
 
 ## 9. Fora do v0
-ERP e integrações; busca na web em tempo real; emissão/transmissão da nota; guia de recolhimento; cobrança automatizada; fila de contratos; segundo estado.
+ERP e integrações; PIS/COFINS e IPI; busca na web em tempo real; emissão/transmissão da nota; guia de recolhimento; cobrança automatizada; fila de contratos; segundo estado; certificado digital e consulta de CRC; comissão e painel do escritório (só após a 1ª renovação); SLA fora da janela de plantão.
 
 ## 10. Requisitos não funcionais
 - Log append-only e retenção ≥ 5 anos 🔎; base legal versionada por data.
@@ -152,12 +158,14 @@ Fora do motor: login · preço · teto
 
 ### 11.2 Modelo de dados
 - `dono`, `escritorio` (UF, porte), `cnpj` (dono_id, escritorio_id, autorizado_em)
-- `contrato` (cnpj_id, pacote: entrada|meio|cheio, preco, teto_notas, vencimento_dia=1, inicio, fim)
-- `norma` (id, fonte: LC214|portaria|ISS, artigo, texto, data_publicacao, vigencia_inicio/fim, escopo: NCM/serviço/UF/município, versao_base)
+- `contrato` (cnpj_id, pacote: entrada|meio|cheio, preco, teto_notas, vencimento_dia=1, inicio, fim, renovado_de_id)
+- `termo_aceite` (cnpj_id, papel: contador|dono, usuario_id, versao_termo, aceito_em)
+- `norma` (id, fonte: LC214|portaria|ISS, tributo: ICMS|ISS|IBS|CBS, artigo, texto, data_publicacao, vigencia_inicio/fim, escopo: NCM/serviço/UF/município, cst?, cclass_trib?, aliquota?, curador, versao_base)
 - `nota` (cnpj_id, tipo NF-e|NFS-e, chave, xml_hash, campos, status: lida|sugerida|firmada|autorizada|voltou, nota_origem_id)
 - `sugestao` (nota_id, tributo, norma_id|null, resultado, justificativa, versao_base)
 - `firma` (nota_id, sugestao_id, decisao, contador_nome, crc, usuario_id, firmado_em) — **append-only**
-- `rejeicao` (nota_id, orgao: SEFAZ|PREFEITURA, codigo, campo, mensagem, recebida_em)
+- `rejeicao` (nota_id, orgao: SEFAZ|PREFEITURA, codigo, campo, mensagem, origem: xml_retorno|colado, recebida_em)
+- `linha_de_base` (cnpj_id, semana, orgao, rejeicoes)
 - `consumo` (contrato_id, autorizadas) e `decisao_teto` (contrato_id, nota_id, parar|seguir, excedente_valor, em)
 
 ### 11.3 API (v0)
@@ -189,7 +197,13 @@ Contexto: 1.501 h/ano de conformidade no Brasil (Banco Mundial) vs. ~233 média 
 - Ciclo: semana 1 um escritório; semanas 2–4 parada medida; dia 1 renova ou sai.
 - Conta do US$ 1 bi: dezenas de milhões de US$ de receita recorrente → a ~US$ 3 mil/CNPJ, dezenas de milhares de CNPJs. Ano 1 é amostra; o número mora na **renovação do dia 1** e em **não ter implantação por prefeitura**.
 
-## 14. Riscos
+## 14. Bloqueio atual
+**O primeiro escritório não está nomeado.** Sem nome, XML e municípios, não há base, tabela de códigos nem linha de base — a semana 1 não existe.
+
+## 15. Destino da POC
+Vira v0 se a parada cair **e** houver renovação no dia 1. Se não cair, **descarta o fluxo, não a base**.
+
+## 16. Riscos
 - Curadoria da base (sobretudo ISS por município) é o gargalo e o ativo.
 - Responsabilidade: "quem assina responde" → termo claro, firma por CRC, disclaimer.
 - Se a parada não cair na semana, não há venda — a medição tem de ser confiável desde o dia 1.

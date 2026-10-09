@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- FICTÍCIO: NCM sem norma na base. O motor não responde. -->
+<nfeProc xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00">
+  <NFe>
+    <infNFe Id="NFe35261011222333000181550010000012361000012368" versao="4.00">
+      <ide><cUF>35</cUF><nNF>1236</nNF><dhEmi>2026-10-09T12:00:00-03:00</dhEmi></ide>
+      <emit>
+        <CNPJ>11222333000181</CNPJ>
+        <enderEmit><cMun>3509502</cMun><xMun>Campinas</xMun><UF>SP</UF></enderEmit>
+      </emit>
+      <det nItem="1">
+        <prod><cProd>PEC-09</cProd><xProd>Peça de máquina</xProd><NCM>84799090</NCM><vProd>800.00</vProd></prod>
+        <imposto><ICMS/></imposto>
+      </det>
+      <total><ICMSTot><vNF>800.00</vNF></ICMSTot></total>
+    </infNFe>
+  </NFe>
+</nfeProc>

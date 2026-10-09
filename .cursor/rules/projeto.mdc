@@ -1,0 +1,6 @@
+---
+description: Contexto e regras do produto A nota sem volta
+alwaysApply: true
+---
+Siga `AGENTS.md` na raiz do repositório. Precedência das fontes: docs/decisoes-da-mesa.md > docs/recorte-da-mesa.md > docs/SPEC.md > docs/POC.md > docs/telas/.
+Nunca deixe o modelo gerar número fiscal (CST, cClassTrib, alíquota, valor): tudo vem da base. Sem norma na base, não responde.

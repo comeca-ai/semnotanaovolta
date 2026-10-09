@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- FICTÍCIO: NCM 62 tem classificação na base, mas sem alíquota. Deve classificar e não calcular. -->
+<nfeProc xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00">
+  <NFe>
+    <infNFe Id="NFe35261011222333000181550010000012351000012351" versao="4.00">
+      <ide><cUF>35</cUF><nNF>1235</nNF><dhEmi>2026-10-09T11:00:00-03:00</dhEmi></ide>
+      <emit>
+        <CNPJ>11222333000181</CNPJ>
+        <enderEmit><cMun>3509502</cMun><xMun>Campinas</xMun><UF>SP</UF></enderEmit>
+      </emit>
+      <det nItem="1">
+        <prod><cProd>CAM-02</cProd><xProd>Camisa de tecido plano</xProd><NCM>62052000</NCM><vProd>3000.00</vProd></prod>
+        <imposto><ICMS/></imposto>
+      </det>
+      <total><ICMSTot><vNF>3000.00</vNF></ICMSTot></total>
+    </infNFe>
+  </NFe>
+</nfeProc>

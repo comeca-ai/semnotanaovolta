@@ -1,0 +1,26 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "anotasemvolta",
+  "main": "src/index.tsx",
+  "compatibility_date": "2026-09-01",
+  "workers_dev": true,
+  "observability": { "enabled": true },
+  "vars": {
+    // "1" mostra o link de login na tela quando não há RESEND_API_KEY. Nunca ligar em produção real.
+    "MODO_DEV": "0",
+    "EMAIL_REMETENTE": "A nota sem volta <entrar@anotasemvolta.com.br>",
+    "PLANTAO_TELEFONE": "(11) 90000-0000"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "anotasemvolta",
+      "database_id": "0adebf89-0a41-4c75-a9cc-314b03d9c88c",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "r2_buckets": [
+    { "binding": "XML", "bucket_name": "anotasemvolta-xml" }
+  ]
+  // Segredo opcional (wrangler secret put RESEND_API_KEY): envia o link de login por e-mail.
+}

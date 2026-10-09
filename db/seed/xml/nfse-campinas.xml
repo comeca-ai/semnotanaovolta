@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- FICTÍCIO: NFS-e padrão nacional, serviço prestado em Campinas. -->
+<NFSe xmlns="http://www.sped.fazenda.gov.br/nfse" versao="1.00">
+  <infNFSe Id="NFS35095022112223330001810000000000000412610000000001">
+    <xLocPrestacao>Campinas</xLocPrestacao>
+    <DPS versao="1.00">
+      <infDPS Id="DPS350950221122233300018100001000000000000001">
+        <dhEmi>2026-10-09T09:00:00-03:00</dhEmi>
+        <prest><CNPJ>11222333000181</CNPJ></prest>
+        <serv>
+          <locPrest><cLocPrestacao>3509502</cLocPrestacao></locPrest>
+          <cServ><cTribNac>010701</cTribNac><xDescServ>Suporte técnico em informática</xDescServ></cServ>
+        </serv>
+        <valores>
+          <vServPrest><vServ>5000.00</vServ></vServPrest>
+          <trib><tribMun><tribISSQN>1</tribISSQN></tribMun></trib>
+        </valores>
+      </infDPS>
+    </DPS>
+  </infNFSe>
+</NFSe>
