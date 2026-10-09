@@ -1,10 +1,10 @@
 import { Hono, type Context } from 'hono';
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
-import { Layout } from './ui/layout';
+import { Layout, type Aba } from './ui/layout';
 import {
   COOKIE_SESSAO, VALIDADE_LINK_MS, VALIDADE_SESSAO_MS, enviarLinkPorEmail, plantaoAberto, sha256, tokenAleatorio,
 } from './lib/auth';
-import { PACOTES, avaliarTeto, reais, type Pacote } from './lib/pacote';
+import { PACOTES, avaliarTeto, pacoteNaRenovacao, reais, type Pacote } from './lib/pacote';
 import { lerXml, tributosDoItem, type NotaLida } from './lib/xml';
 import { sugerir, type Norma } from './lib/motor';
 
@@ -19,7 +19,7 @@ type Env = {
 type Usuario = { id: number; email: string; nome: string; papel: 'dono' | 'contador'; escritorio_id: number | null };
 type Cnpj = {
   id: number; cnpj: string; razao_social: string; uf: string; municipio: string;
-  dono_nome: string; escritorio_nome: string; dono_id: number;
+  dono_nome: string; escritorio_nome: string; dono_id: number; pacote: Pacote | null; aceites: number;
 };
 type Contrato = { id: number; pacote: Pacote; preco_centavos: number; teto_notas: number; inicio: string; fim: string };
 type Vars = { usuario: Usuario; cnpj: Cnpj; contrato: Contrato | null };
@@ -42,15 +42,22 @@ const fmtHora = (iso: string) =>
   new Date(iso.endsWith('Z') ? iso : `${iso.replace(' ', 'T')}Z`).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
 const plantao = (c: C) => ({ aberto: plantaoAberto(), telefone: c.env.PLANTAO_TELEFONE });
 
-function pagina(c: C, titulo: string, corpo: any, status = 200) {
-  const usuario = c.get('usuario') ?? null;
+function pagina(c: C, titulo: string, corpo: any, status = 200, aba: Aba = null) {
   return c.html(
-    <Layout titulo={`${titulo} · A nota sem volta`} usuario={usuario} plantao={plantao(c)}>
+    <Layout titulo={`${titulo} · A nota sem volta`} usuario={c.get('usuario') ?? null} cnpj={c.get('cnpj') ?? null} aba={aba} plantao={plantao(c)}>
       {corpo}
     </Layout>,
     status as any,
   );
 }
+
+const tail = (chave: string) => String(chave).slice(-8);
+const dataBr = (iso: string) => fmtData(iso.slice(0, 10));
+const diaSeguinte = (iso: string) => {
+  const d = new Date(`${iso}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + 1);
+  return d.toISOString().slice(0, 10);
+};
 
 // POST só da própria origem.
 app.use('*', async (c, next) => {
@@ -79,39 +86,41 @@ app.get('/', (c) =>
   c.html(
     <Layout
       titulo="A nota sem volta"
-      descricao="Nota lida e firmada por contador. R$ 9 mil por ano, primeiro CNPJ. Vence dia 1. Plantão na sexta."
+      descricao="Seu contador confirma o imposto na nota, com artigo e data. R$ 9 mil por ano no primeiro CNPJ. Vence dia 1."
       plantao={plantao(c)}
     >
-      <section style="padding:48px 0 32px">
-        <h1 style="font-size:2.6rem">A nota sem volta.</h1>
-        <p style="font-size:1.2rem">A nota que o seu escritório já emite, lida e firmada por contador. Se voltar, tem telefone.</p>
-        <p class="valor">R$ 9 mil por ano, primeiro CNPJ. Vence dia 1.</p>
+      <section class="capa">
+        <h1>A nota sem volta.</h1>
+        <p class="lead">Seu contador confirma o imposto na nota, com artigo e data. A nota sai e não volta.</p>
+        <p class="preco">R$ 9 mil por ano no primeiro CNPJ. R$ 18 mil nos próximos.</p>
+        <p class="mini" style="margin-top:6px">Vence dia 1.</p>
         <div class="acoes"><a class="botao" href="/entrar">Ver na sua nota</a></div>
       </section>
-      <section class="cartao">
+
+      <section class="folha">
+        <p>Se a nota voltar, você sabe o campo e tem telefone.</p>
+        <p>Plantão: sexta, 18h às 22h. Sábado, 9h às 12h.</p>
+        <p>Quem indica: seu escritório contábil. Quem paga: você.</p>
+      </section>
+
+      <section class="folha">
         <h2>Preço escrito. Excedente escrito antes.</h2>
-        <div class="tabela">
-          <table>
-            <thead><tr><th>Pacote</th><th>Quando</th><th>Notas por ano</th><th>Preço por ano</th></tr></thead>
-            <tbody>
-              <tr><td>Entrada</td><td>Primeiro CNPJ</td><td>até 2.400</td><td>R$ 9 mil</td></tr>
-              <tr><td>Meio</td><td>Segundo CNPJ ou renovação</td><td>até 6.000</td><td>R$ 18 mil</td></tr>
-              <tr><td>Cheio</td><td>Vários estados, parada já caída</td><td>até 12.000</td><td>R$ 24 mil</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <p style="margin-top:12px">Acima do teto do seu pacote: R$ 4 por nota. Avisamos antes da nota que passa.</p>
-        <p>Nota devolvida e reemitida não conta de novo.</p>
-        <p>Vencimento dia 1. Por CNPJ. Sem projeto, sem implantação.</p>
+        <table class="linhas tabela-pacotes">
+          <thead>
+            <tr><th>Pacote</th><th>Notas por ano</th><th class="dir">Por ano</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Entrada · primeiro CNPJ</td><td class="num">até 2.400</td><td class="dir num">R$ 9 mil</td></tr>
+            <tr><td>Meio · próximo CNPJ ou renovação</td><td class="num">até 6.000</td><td class="dir num">R$ 18 mil</td></tr>
+            <tr><td>Cheio · parada já caída</td><td class="num">até 12.000</td><td class="dir num">R$ 24 mil</td></tr>
+          </tbody>
+        </table>
+        <p style="margin-top:14px">Acima do teto do seu pacote: R$ 4 por nota, avisado antes da nota que passa.</p>
+        <p>Nota devolvida e reemitida não conta de novo. Vence dia 1, por CNPJ. Sem projeto, sem implantação.</p>
         <div class="acoes"><a class="botao" href="/entrar">Ver na sua nota</a></div>
       </section>
-      <section style="margin:24px 0">
-        <p>Você sobe o XML. A nota é lida: NCM, estado, município, ISS, valor.</p>
-        <p>A sugestão vem com artigo e data. O contador confirma e o CRC fica no log.</p>
-        <p>Se a nota voltar, a tela mostra o órgão, o código e o campo. E o telefone.</p>
-      </section>
-      <p>Escritório contábil: você indica, o dono paga. Fale com a gente antes de indicar o primeiro CNPJ.</p>
-      <p class="nota-legal">Sugestão, não decisão. Não é parecer e não substitui contador.</p>
+
+      <p class="mini" style="margin-top:40px">Sugestão, não decisão. Não é parecer e não substitui contador.</p>
     </Layout>,
   ),
 );
@@ -122,12 +131,13 @@ app.get('/entrar', (c) =>
   pagina(c, 'Entrar', (
     <>
       <h1>Entrar</h1>
+      <p class="sub">Digite seu e-mail. O link chega na hora.</p>
       <form method="post" action="/entrar">
-        <label for="email">Seu e-mail</label>
+        <label for="email">E-mail</label>
         <input id="email" name="email" type="email" required autocomplete="email" autofocus />
         <div class="acoes"><button class="botao" type="submit">Receber o link</button></div>
       </form>
-      <p class="nota-legal" style="margin-top:16px">O link vale por 15 minutos e uma vez só.</p>
+      <p class="mini" style="margin-top:20px">O link vale por 15 minutos e uma vez só.</p>
     </>
   )),
 );
@@ -153,11 +163,11 @@ app.post('/entrar', async (c) => {
   return pagina(c, 'Link enviado', (
     <>
       <h1>Confira seu e-mail.</h1>
-      <p>Se o e-mail estiver autorizado, o link chega em instantes.</p>
+      <p class="sub">Se o e-mail estiver autorizado, o link chega em instantes.</p>
       {linkDev && (
-        <div class="ficticio">
+        <p class="ficticio">
           Modo de desenvolvimento, sem envio de e-mail: <a href={linkDev}>entrar por este link</a>.
-        </div>
+        </p>
       )}
     </>
   ));
@@ -168,6 +178,7 @@ app.get('/entrar/link', (c) =>
   pagina(c, 'Entrar', (
     <>
       <h1>Entrar</h1>
+      <p class="sub">Um toque e você está dentro.</p>
       <form method="post" action="/entrar/link">
         <input type="hidden" name="t" value={c.req.query('t') ?? ''} />
         <div class="acoes"><button class="botao" type="submit">Entrar</button></div>
@@ -186,7 +197,7 @@ app.post('/entrar/link', async (c) => {
     return pagina(c, 'Link vencido', (
       <>
         <h1>Este link não vale mais.</h1>
-        <p>Ele vence em 15 minutos e serve uma vez só.</p>
+        <p class="sub">Ele vence em 15 minutos e serve uma vez só.</p>
         <div class="acoes"><a class="botao" href="/entrar">Pedir outro link</a></div>
       </>
     ), 400);
@@ -222,24 +233,43 @@ async function exigeLogin(c: C, next: () => Promise<void>) {
 function cnpjsDoUsuario(c: C) {
   const u = c.get('usuario');
   return c.env.DB.prepare(
-    `SELECT c.id, c.cnpj, c.razao_social, c.uf, c.municipio, c.dono_id, d.nome AS dono_nome, e.nome AS escritorio_nome
+    `SELECT c.id, c.cnpj, c.razao_social, c.uf, c.municipio, c.dono_id, d.nome AS dono_nome, e.nome AS escritorio_nome,
+       (SELECT k.pacote FROM contrato k WHERE k.cnpj_id = c.id AND k.inicio <= date('now') AND k.fim >= date('now') ORDER BY k.inicio DESC LIMIT 1) AS pacote,
+       (SELECT COUNT(DISTINCT t.papel) FROM termo_aceite t WHERE t.cnpj_id = c.id AND t.versao_termo = ?3) AS aceites
      FROM cnpj c JOIN usuario d ON d.id = c.dono_id JOIN escritorio e ON e.id = c.escritorio_id
      WHERE c.dono_id = ?1 OR c.escritorio_id = ?2 ORDER BY c.id`,
-  ).bind(u.id, u.escritorio_id ?? -1);
+  ).bind(u.id, u.escritorio_id ?? -1, VERSAO_TERMO);
 }
 
 app.get('/cnpjs', async (c) => {
   const { results } = await cnpjsDoUsuario(c).all<Cnpj>();
-  return pagina(c, 'Escolha o CNPJ', (
+  if (results.length === 1) return c.redirect(`/c/${results[0].cnpj}/notas`, 303);
+  return pagina(c, 'Qual CNPJ?', (
     <>
-      <h1>Escolha o CNPJ.</h1>
-      {results.length === 0 && <p>Nenhum CNPJ autorizado para você. Fale com o dono da empresa.</p>}
-      {results.map((x) => (
-        <a class="cartao" href={`/c/${x.cnpj}`} style="display:block;text-decoration:none">
-          <p class="valor">{x.razao_social}</p>
-          <p class="rotulo">{fmtCnpj(x.cnpj)} · {x.municipio}/{x.uf}</p>
-        </a>
-      ))}
+      <h1>Qual CNPJ?</h1>
+      {results.length === 0 ? (
+        <p class="sub">Nenhum CNPJ autorizado para você. Peça ao seu escritório.</p>
+      ) : (
+        <>
+          <p class="sub">Escolha com qual empresa você vai trabalhar agora.</p>
+          <ul class="lista">
+            {results.map((x) => (
+              <li>
+                <a href={`/c/${x.cnpj}/notas`}>
+                  <span>
+                    <span class="princ">{x.razao_social}</span><br />
+                    <span class="mini num">{fmtCnpj(x.cnpj)} · {x.municipio}/{x.uf}</span>
+                  </span>
+                  <span class="lado">
+                    {x.aceites < 2 && <span class="etiqueta aviso-txt" style="color:var(--alerta);margin-right:8px">Falta termo</span>}
+                    {x.pacote ? PACOTES[x.pacote].nome : 'Sem contrato'}
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
     </>
   ));
 });
@@ -251,7 +281,7 @@ async function carregaCnpj(c: C, next: () => Promise<void>) {
   const alvo = c.req.param('cnpj');
   const { results } = await cnpjsDoUsuario(c).all<Cnpj>();
   const cnpj = results.find((x) => x.cnpj === alvo);
-  if (!cnpj) return pagina(c, 'CNPJ', <><h1>CNPJ não autorizado.</h1><a class="botao" href="/cnpjs">Escolher outro</a></>, 404);
+  if (!cnpj) return pagina(c, 'CNPJ', <><h1>CNPJ não autorizado.</h1><div class="acoes"><a class="botao" href="/cnpjs">Escolher outro</a></div></>, 404);
   const contrato = await c.env.DB.prepare(
     'SELECT id, pacote, preco_centavos, teto_notas, inicio, fim FROM contrato WHERE cnpj_id = ? AND inicio <= ?2 AND fim >= ?2 ORDER BY inicio DESC LIMIT 1',
   ).bind(cnpj.id, hoje()).first<Contrato>();
@@ -279,88 +309,111 @@ async function usadas(c: C, excetoLote?: number): Promise<number> {
   return r?.n ?? 0;
 }
 
-// Contrato de cálculo
+const n0 = (n: number) => n.toLocaleString('pt-BR');
+
+function Medidor({ usadasN, teto }: { usadasN: number; teto: number }) {
+  const pct = Math.min(100, Math.round((usadasN / Math.max(teto, 1)) * 100));
+  const falta = teto - usadasN;
+  return (
+    <div>
+      <div class="medidor" role="img" aria-label={`${n0(usadasN)} de ${n0(teto)} notas`}><span style={`width:${pct}%`} /></div>
+      <p class="mini">
+        <span class="num">{n0(usadasN)}</span> de <span class="num">{n0(teto)}</span> notas no pacote.
+        {falta > 0 && pct >= 90 && <> Faltam <span class="num">{n0(falta)}</span>. Depois, R$ 4 por nota.</>}
+      </p>
+    </div>
+  );
+}
+
+// ---------- contrato (uma vez por ano) ----------
+
 app.get('/c/:cnpj', async (c) => {
   const cnpj = c.get('cnpj');
   const ct = c.get('contrato');
-  const t = await termos(c);
   const usadasN = await usadas(c);
-  const { results: notas } = await c.env.DB.prepare(
-    'SELECT id, tipo, chave, valor_centavos, status, municipio_nome, uf FROM nota WHERE cnpj_id = ? AND status != ? ORDER BY id DESC LIMIT 10',
-  ).bind(cnpj.id, 'pendente').all<any>();
-  const termoOk = t.dono && t.contador;
+  const renovaEm = ct ? diaSeguinte(ct.fim) : null;
+  const proximo = ct ? PACOTES[pacoteNaRenovacao(ct.pacote)] : null;
   return pagina(c, 'Contrato de cálculo', (
     <>
       <h1>Contrato de cálculo</h1>
-      <p class="rotulo">{cnpj.razao_social} · {fmtCnpj(cnpj.cnpj)}</p>
-      <div class="grade" style="margin:16px 0">
-        <div><p class="rotulo">Quem paga</p><p class="valor">{cnpj.dono_nome}</p></div>
-        <div><p class="rotulo">Quem indica</p><p class="valor">{cnpj.escritorio_nome}</p></div>
-        <div><p class="rotulo">Vencimento</p><p class="valor">dia 1</p></div>
-      </div>
-      {ct ? (
-        <div class="cartao">
-          <h2>Valores do contrato</h2>
-          <p><span class="grande">{reais(ct.preco_centavos)}</span> por ano · Pacote {PACOTES[ct.pacote].nome}</p>
-          <p>Primeiro CNPJ R$ 9.000. Próximo CNPJ, cheio. Vence dia 1 de cada ano.</p>
-          <p class="rotulo">Notas: {usadasN.toLocaleString('pt-BR')} de {ct.teto_notas.toLocaleString('pt-BR')}
-            {ct.teto_notas - usadasN > 0 && ct.teto_notas - usadasN <= 100 && <> · Faltam {ct.teto_notas - usadasN} notas para o teto do seu pacote.</>}
-          </p>
-        </div>
-      ) : <div class="cartao"><p class="erro">Sem contrato vigente para este CNPJ.</p></div>}
-      <div class="grade">
-        <div class="cartao"><p class="rotulo">Rejeição SEFAZ</p><p class="valor">sem retorno registrado</p></div>
-        <div class="cartao"><p class="rotulo">Rejeição prefeitura</p><p class="valor">sem retorno registrado</p></div>
-      </div>
-      <div class="cartao">
-        <h2>Notas recentes</h2>
-        {notas.length === 0 ? <p>Nenhuma nota ainda.</p> : (
-          <div class="tabela"><table>
-            <thead><tr><th>Nota</th><th>Município</th><th>Valor</th><th>Situação</th></tr></thead>
-            <tbody>{notas.map((n) => (
-              <tr>
-                <td><a href={`/c/${cnpj.cnpj}/nota/${n.id}`}>{n.tipo} …{String(n.chave).slice(-8)}</a></td>
-                <td>{n.municipio_nome}/{n.uf}</td><td>{reais(n.valor_centavos)}</td><td>{situacao(n.status)}</td>
-              </tr>
-            ))}</tbody>
-          </table></div>
-        )}
-      </div>
-      <div class="acoes">
-        {termoOk ? <a class="botao" href={`/c/${cnpj.cnpj}/enviar`}>Subir XML</a> : <a class="botao" href={`/c/${cnpj.cnpj}/termo`}>Ver o termo</a>}
-      </div>
-      {!termoOk && <p style="margin-top:12px">Falta o termo. Sem termo, a nota não sobe.</p>}
+      <p class="sub">{cnpj.razao_social} · <span class="num">{fmtCnpj(cnpj.cnpj)}</span></p>
+
+      <table class="linhas">
+        <tbody>
+          <tr><th>Quem paga</th><td>{cnpj.dono_nome}</td></tr>
+          <tr><th>Quem indica</th><td>{cnpj.escritorio_nome}</td></tr>
+          <tr><th>Vencimento</th><td>dia 1</td></tr>
+        </tbody>
+      </table>
+
+      <section class="folha">
+        <p class="rotulo">Valores</p>
+        {ct ? (
+          <>
+            <p class="display" style="font-size:2.4rem;margin:0 0 4px">{reais(ct.preco_centavos)} <span class="mini" style="font-family:var(--sans)">por ano</span></p>
+            <p>Pacote {PACOTES[ct.pacote].nome}. Até <span class="num">{n0(ct.teto_notas)}</span> notas por ano.</p>
+            <p>Acima do teto: R$ 4 por nota, avisado antes.</p>
+            {renovaEm && proximo && <p class="mini">Renovação em {fmtData(renovaEm)}: {proximo.nome}, {reais(proximo.precoCentavos)}.</p>}
+            <Medidor usadasN={usadasN} teto={ct.teto_notas} />
+            {ct.pacote !== 'cheio' && <p class="mini">O Cheio abre quando a parada cair na semana deste CNPJ.</p>}
+          </>
+        ) : <p class="erro">Sem contrato vigente para este CNPJ.</p>}
+      </section>
+
+      <section class="folha">
+        <p class="rotulo">Base legal</p>
+        <p>LC 214 e portarias com data. ISS do município.</p>
+        <p>Sugestão, não decisão. Quem firma responde. O log grava artigo, data, CRC e horário.</p>
+      </section>
+
+      <section class="folha">
+        <p class="rotulo">Semana</p>
+        <p class="mini" style="font-size:.95rem;color:var(--tinta-2)">Sem linha de base ainda. Peça ao escritório as rejeições das 4 semanas anteriores.</p>
+      </section>
+
+      <div class="acoes"><a class="botao" href={`/c/${cnpj.cnpj}/notas`}>Subir notas</a></div>
     </>
-  ));
+  ), 200, 'contrato');
 });
 
-const situacao = (s: string) =>
-  ({ sugerida: 'Sugestão pronta', firmada: 'Firmada', parada: 'Parada', voltou: 'Voltou', pendente: 'Pendente' } as Record<string, string>)[s] ?? s;
-
 // ---------- termo ----------
+
+const TERMO = [
+  'O sistema sugere. Não decide. Não é parecer.',
+  'A sugestão traz artigo e data da norma que está na base.',
+  'Sem norma na base, o sistema não responde.',
+  'Quem firma responde pela nota. Firma com nome e CRC digitados.',
+  'O CRC não é conferido em cadastro oficial nesta versão.',
+  'O log guarda CRC, artigo, data da norma, horário e versão da base. Não apaga.',
+  'Pacote por CNPJ: Entrada 2.400 notas por R$ 9 mil, Meio 6.000 por R$ 18 mil, Cheio 12.000 por R$ 24 mil. Acima do teto, R$ 4 por nota, avisado antes.',
+  'Nota rejeitada e devolvida não conta de novo.',
+  'Vence dia 1.',
+];
 
 app.get('/c/:cnpj/termo', async (c) => {
   const t = await termos(c);
   const u = c.get('usuario');
   const jaAceitei = t[u.papel];
-  return pagina(c, 'Termo', (
+  const ambos = t.dono && t.contador;
+  return pagina(c, 'Termo de uso', (
     <>
-      <h1>Termo</h1>
-      <div class="cartao">
-        <p>O sistema sugere. Não decide e não é parecer.</p>
-        <p>Quem firma responde pela nota firmada.</p>
-        <p>O CRC é digitado por quem firma. Nesta fase, ele não é conferido em cadastro oficial.</p>
-        <p>A base legal é interna e tem data. O sistema não busca norma na internet.</p>
-        <p class="rotulo">Versão {fmtData(VERSAO_TERMO)}</p>
+      <h1>Termo de uso</h1>
+      <p class="sub">Leia até o fim. Dono e contador aceitam, cada um no seu acesso.</p>
+      <ol style="padding-left:1.2rem;margin:0 0 24px">
+        {TERMO.map((x) => <li style="margin:0 0 8px">{x}</li>)}
+      </ol>
+      <table class="linhas">
+        <tbody>
+          <tr><th>Contador</th><td class={t.contador ? 'ok' : ''}>{t.contador ? 'Aceitou' : 'Falta aceitar'}</td></tr>
+          <tr><th>Dono</th><td class={t.dono ? 'ok' : ''}>{t.dono ? 'Aceitou' : 'Falta aceitar'}</td></tr>
+        </tbody>
+      </table>
+      {!ambos && jaAceitei && <p class="aviso" style="margin-top:16px">Você aceitou. Falta {u.papel === 'dono' ? 'o contador' : 'o dono'}. Nenhuma nota sobe até os dois aceitarem.</p>}
+      <div class="acoes">
+        {ambos ? <a class="botao" href={`/c/${c.get('cnpj').cnpj}/notas`}>Subir notas</a>
+          : jaAceitei ? <a class="botao" href={`/c/${c.get('cnpj').cnpj}`}>Voltar ao contrato</a>
+          : <form method="post"><button class="botao" type="submit">Aceitar</button></form>}
       </div>
-      <p>Contador: <strong>{t.contador ? 'aceito' : 'pendente'}</strong> · Dono: <strong>{t.dono ? 'aceito' : 'pendente'}</strong></p>
-      {t.contador && !t.dono && <p>O contador aceitou. Falta o dono.</p>}
-      {t.dono && !t.contador && <p>O dono aceitou. Falta o contador.</p>}
-      {jaAceitei ? (
-        <div class="acoes"><a class="botao" href={`/c/${c.get('cnpj').cnpj}`}>Voltar ao contrato</a></div>
-      ) : (
-        <form method="post"><div class="acoes"><button class="botao" type="submit">Aceito como {u.papel}</button></div></form>
-      )}
     </>
   ));
 });
@@ -373,38 +426,94 @@ app.post('/c/:cnpj/termo', async (c) => {
   return c.redirect(`/c/${c.get('cnpj').cnpj}/termo`, 303);
 });
 
-// ---------- subir XML ----------
+// ---------- notas: subir e ver a lista (o dia a dia) ----------
 
-app.get('/c/:cnpj/enviar', async (c) => {
+app.get('/c/:cnpj/enviar', (c) => c.redirect(`/c/${c.get('cnpj').cnpj}/notas`, 303));
+
+app.get('/c/:cnpj/notas', async (c) => {
   const cnpj = c.get('cnpj');
   const ct = c.get('contrato');
   const t = await termos(c);
   if (!(t.dono && t.contador)) return c.redirect(`/c/${cnpj.cnpj}/termo`, 303);
   const usadasN = await usadas(c);
-  return pagina(c, 'Subir XML', (
+  const { results } = await c.env.DB.prepare(
+    `SELECT n.id, n.tipo, n.chave, n.valor_centavos, n.status, n.data_emissao, n.municipio_nome,
+       (SELECT COUNT(*) FROM sugestao s WHERE s.nota_id = n.id AND s.resultado = 'sugere') AS sugere
+     FROM nota n WHERE n.cnpj_id = ? AND n.status IN ('sugerida', 'firmada', 'voltou') ORDER BY n.id DESC LIMIT 300`,
+  ).bind(cnpj.id).all<any>();
+  const prontas = results.filter((n) => n.status === 'sugerida' && n.sugere > 0);
+  const semNorma = results.filter((n) => n.status === 'sugerida' && n.sugere === 0);
+  const firmadas = results.filter((n) => n.status === 'firmada');
+  const fim = c.req.query('fim') === '1';
+  const Linha = ({ n }: { n: any }) => (
+    <li>
+      <a href={`/c/${cnpj.cnpj}/nota/${n.id}`}>
+        <span><span class="princ">{n.tipo}</span> <span class="num">…{tail(n.chave)}</span><br /><span class="mini">{n.municipio_nome}</span></span>
+        <span class="lado"><span class="num">{reais(n.valor_centavos)}</span><br />{dataBr(n.data_emissao)}</span>
+      </a>
+    </li>
+  );
+  return pagina(c, 'Notas', (
     <>
-      <h1>Suba o XML.</h1>
-      <p class="rotulo">{cnpj.razao_social} · {fmtCnpj(cnpj.cnpj)}</p>
-      {ct && <p>Pacote {PACOTES[ct.pacote].nome}: {usadasN.toLocaleString('pt-BR')} de {ct.teto_notas.toLocaleString('pt-BR')} notas.</p>}
-      <form method="post" enctype="multipart/form-data" id="form-xml">
-        <label class="drop" id="drop" for="xml">
-          <strong>Arraste os XMLs aqui</strong><br />
-          <span class="rotulo">ou toque para escolher. NF-e e NFS-e. Até {MAX_ARQUIVOS} arquivos por vez.</span>
-          <input id="xml" name="xml" type="file" accept=".xml,text/xml,application/xml" multiple required
-            style="display:block;margin:16px auto 0" />
+      <h1>Notas</h1>
+      <p class="sub">{cnpj.razao_social} · <span class="num">{fmtCnpj(cnpj.cnpj)}</span> · <a href="/cnpjs">Trocar CNPJ</a></p>
+      {ct ? <Medidor usadasN={usadasN} teto={ct.teto_notas} /> : <p class="aviso">Sem contrato vigente para este CNPJ.</p>}
+      {fim && <p class="carimbo" style="margin-top:16px"><span class="display">Tudo firmado.</span> Todas as notas de hoje estão firmadas.</p>}
+
+      <form method="post" action={`/c/${cnpj.cnpj}/enviar`} enctype="multipart/form-data" style="margin-top:24px">
+        <label class="drop" id="drop" for="xml" style="margin-top:0">
+          <span class="display" style="font-size:1.4rem">Solte os XML aqui</span><br />
+          <span class="mini">NF-e e NFS-e. Pode ser vários, até {MAX_ARQUIVOS} por vez.</span>
+          <input id="xml" name="xml" type="file" accept=".xml,text/xml,application/xml" multiple required />
         </label>
-        <p id="contagem" class="rotulo" aria-live="polite"></p>
-        <div class="acoes"><button class="botao" type="submit">Ler as notas</button></div>
+        <p id="contagem" class="mini" aria-live="polite" style="min-height:1.2em"></p>
+        <div class="acoes" style="margin-top:8px"><button class="botao" type="submit">Subir</button></div>
       </form>
       <script dangerouslySetInnerHTML={{ __html: `
         const d=document.getElementById('drop'),i=document.getElementById('xml'),k=document.getElementById('contagem');
         ['dragenter','dragover'].forEach(e=>d.addEventListener(e,ev=>{ev.preventDefault();d.classList.add('ativo')}));
         ['dragleave','drop'].forEach(e=>d.addEventListener(e,()=>d.classList.remove('ativo')));
         d.addEventListener('drop',ev=>{ev.preventDefault();i.files=ev.dataTransfer.files;i.dispatchEvent(new Event('change'))});
-        i.addEventListener('change',()=>{k.textContent=i.files.length+' arquivo(s) escolhido(s).'});
+        i.addEventListener('change',()=>{k.textContent=i.files.length+(i.files.length===1?' arquivo escolhido.':' arquivos escolhidos.')});
       ` }} />
+
+      <section class="folha">
+        <h2>Prontas para firmar <span class="num">({prontas.length})</span></h2>
+        {prontas.length === 0 ? <p class="mini" style="font-size:.95rem">Nenhuma nota ainda. Suba o primeiro XML.</p> : (
+          <>
+            <ul class="lista">{prontas.map((n) => <Linha n={n} />)}</ul>
+            <div class="acoes"><a class="botao" href={`/c/${cnpj.cnpj}/proxima`}>Firmar a primeira</a></div>
+          </>
+        )}
+      </section>
+
+      {semNorma.length > 0 && (
+        <section class="folha">
+          <h2>Sem norma na base <span class="num">({semNorma.length})</span></h2>
+          <p class="mini">Não sugerimos. Ligue para o plantão.</p>
+          <ul class="lista">{semNorma.map((n) => <Linha n={n} />)}</ul>
+        </section>
+      )}
+
+      {firmadas.length > 0 && (
+        <section class="folha">
+          <details>
+            <summary>Firmadas <span class="num">({firmadas.length})</span></summary>
+            <ul class="lista">{firmadas.map((n) => <Linha n={n} />)}</ul>
+          </details>
+        </section>
+      )}
     </>
-  ));
+  ), 200, 'notas');
+});
+
+app.get('/c/:cnpj/proxima', async (c) => {
+  const cnpj = c.get('cnpj');
+  const prox = await c.env.DB.prepare(
+    `SELECT n.id FROM nota n WHERE n.cnpj_id = ? AND n.status = 'sugerida'
+     AND EXISTS (SELECT 1 FROM sugestao s WHERE s.nota_id = n.id AND s.resultado = 'sugere') ORDER BY n.id LIMIT 1`,
+  ).bind(cnpj.id).first<{ id: number }>();
+  return c.redirect(prox ? `/c/${cnpj.cnpj}/nota/${prox.id}` : `/c/${cnpj.cnpj}/notas?fim=1`, 303);
 });
 
 type ResumoArquivo = { arquivo: string; ok: boolean; motivo?: string; notaId?: number };
@@ -414,13 +523,13 @@ app.post('/c/:cnpj/enviar', async (c) => {
   const u = c.get('usuario');
   const t = await termos(c);
   if (!(t.dono && t.contador)) return c.redirect(`/c/${cnpj.cnpj}/termo`, 303);
-  if (!c.get('contrato')) return pagina(c, 'Sem contrato', <h1>Sem contrato vigente para este CNPJ.</h1>, 400);
+  if (!c.get('contrato')) return pagina(c, 'Sem contrato', <><h1>Sem contrato vigente.</h1><p class="sub">Este CNPJ não tem contrato ativo.</p></>, 400);
 
   const form = await c.req.formData();
   const arquivos = form.getAll('xml').filter((f): f is File => typeof f !== 'string');
-  if (arquivos.length === 0) return c.redirect(`/c/${cnpj.cnpj}/enviar`, 303);
+  if (arquivos.length === 0) return c.redirect(`/c/${cnpj.cnpj}/notas`, 303);
   if (arquivos.length > MAX_ARQUIVOS) {
-    return pagina(c, 'Muitos arquivos', <><h1>Até {MAX_ARQUIVOS} arquivos por vez.</h1><a class="botao" href={`/c/${cnpj.cnpj}/enviar`}>Subir de novo</a></>, 400);
+    return pagina(c, 'Muitos arquivos', <><h1>Até {MAX_ARQUIVOS} arquivos por vez.</h1><div class="acoes"><a class="botao" href={`/c/${cnpj.cnpj}/notas`}>Subir de novo</a></div></>, 400);
   }
 
   const lote = await c.env.DB.prepare(
@@ -439,9 +548,15 @@ app.post('/c/:cnpj/enviar', async (c) => {
     const leitura = lerXml(texto);
     if (!leitura.ok) { resumo.push({ arquivo: nome, ok: false, motivo: leitura.motivo }); continue; }
     const n = leitura.nota;
-    if (n.cnpjEmitente !== cnpj.cnpj) { resumo.push({ arquivo: nome, ok: false, motivo: 'Esta nota é de outro CNPJ. Confira e suba de novo.' }); continue; }
-    const existe = await c.env.DB.prepare('SELECT id FROM nota WHERE cnpj_id = ? AND chave = ?').bind(cnpj.id, n.chave).first();
-    if (existe || vistas.has(n.chave)) { resumo.push({ arquivo: nome, ok: false, motivo: 'Nota já enviada.' }); continue; }
+    if (n.cnpjEmitente !== cnpj.cnpj) {
+      resumo.push({ arquivo: nome, ok: false, motivo: `Esta nota é do CNPJ ${fmtCnpj(n.cnpjEmitente)}. Você escolheu ${fmtCnpj(cnpj.cnpj)}.` });
+      continue;
+    }
+    const existe = await c.env.DB.prepare('SELECT id, criado_em FROM nota WHERE cnpj_id = ? AND chave = ?').bind(cnpj.id, n.chave).first<{ id: number; criado_em: string }>();
+    if (existe || vistas.has(n.chave)) {
+      resumo.push({ arquivo: nome, ok: false, motivo: existe ? `Esta nota já subiu em ${dataBr(existe.criado_em)}.` : 'Nota repetida neste lote.' });
+      continue;
+    }
     vistas.add(n.chave);
     const hash = await sha256(bytes);
     const chaveR2 = `${cnpj.cnpj}/${n.chave}.xml`;
@@ -508,18 +623,22 @@ app.get('/c/:cnpj/lote/:id/teto', async (c) => {
   const a = avaliarTeto(ct.teto_notas, await usadas(c, loteId), novas?.n ?? 0);
   return pagina(c, 'Teto do pacote', (
     <>
-      <h1>Teto do pacote.</h1>
-      <p>Pacote {PACOTES[ct.pacote].nome}.</p>
-      <div class="cartao" style="max-width:420px">
-        <p>Notas autorizadas <strong style="float:right">{a.teto.toLocaleString('pt-BR')}</strong></p>
-        <p>Usadas <strong style="float:right">{a.usadas.toLocaleString('pt-BR')}</strong></p>
-        <p>Neste lote <strong style="float:right">{a.novas.toLocaleString('pt-BR')}</strong></p>
-      </div>
-      <p>{a.excedentes === 1 ? 'Uma nota deste lote passa do teto.' : `${a.excedentes} notas deste lote passam do teto.`}</p>
-      <p><strong>Excedente R$ 4 por nota, escrito antes: {reais(a.valorExcedenteCentavos)}.</strong></p>
+      <h1>Teto do pacote</h1>
+      <p class="sub">Pacote {PACOTES[ct.pacote].nome}. <span class="num">{n0(a.teto)}</span> notas por ano.</p>
+      <table class="linhas">
+        <tbody>
+          <tr><th>Usadas</th><td class="dir num">{n0(a.usadas)}</td></tr>
+          <tr><th>Neste lote</th><td class="dir num">{n0(a.novas)}</td></tr>
+          <tr><th>Passam do teto</th><td class="dir num">{n0(a.excedentes)}</td></tr>
+        </tbody>
+      </table>
+      <p class="display" style="font-size:1.5rem;margin:24px 0 6px">
+        {a.excedentes === 1 ? 'A próxima nota passa do teto.' : `${n0(a.excedentes)} notas passam do teto.`}
+      </p>
+      <p>Custa R$ 4 por nota. Escrito no contrato. Neste lote: <strong class="num">{reais(a.valorExcedenteCentavos)}</strong>.</p>
       <form method="post" class="acoes">
-        <button class="botao" name="decisao" value="parar" type="submit">Parar</button>
-        <button class="secundario" name="decisao" value="seguir" type="submit">Seguir</button>
+        <button class="botao" name="decisao" value="seguir" type="submit">Seguir. {reais(a.valorExcedenteCentavos)}</button>
+        <button class="link-botao" name="decisao" value="parar" type="submit">Parar</button>
       </form>
     </>
   ));
@@ -559,158 +678,164 @@ app.get('/c/:cnpj/lote/:id', async (c) => {
   if (lote.status === 'aguardando_teto') return c.redirect(`/c/${cnpj.cnpj}/lote/${loteId}/teto`, 303);
   const resumo: ResumoArquivo[] = JSON.parse(lote.resumo_json);
   const { results: contagem } = await c.env.DB.prepare(
-    `SELECT s.nota_id, SUM(s.resultado = 'nao_responde') AS sem_norma, SUM(s.resultado = 'sugere' AND s.valor_centavos IS NULL) AS sem_calculo
-     FROM sugestao s JOIN nota n ON n.id = s.nota_id WHERE n.lote_id = ? GROUP BY s.nota_id`,
-  ).bind(loteId).all<{ nota_id: number; sem_norma: number; sem_calculo: number }>();
-  const porNota = new Map(contagem.map((x) => [x.nota_id, x]));
+    `SELECT s.nota_id, SUM(s.resultado = 'sugere') AS sugere FROM sugestao s JOIN nota n ON n.id = s.nota_id WHERE n.lote_id = ? GROUP BY s.nota_id`,
+  ).bind(loteId).all<{ nota_id: number; sugere: number }>();
+  const sugere = new Map(contagem.map((x) => [x.nota_id, x.sugere]));
   const lidas = resumo.filter((r) => r.ok);
   const recusadas = resumo.filter((r) => !r.ok);
-  const comSemNorma = lidas.filter((r) => (porNota.get(r.notaId!)?.sem_norma ?? 0) > 0).length;
-  const comSemCalculo = lidas.filter((r) => (porNota.get(r.notaId!)?.sem_calculo ?? 0) > 0).length;
-  const primeira = lidas[0]?.notaId;
+  const prontas = lidas.filter((r) => (sugere.get(r.notaId!) ?? 0) > 0);
+  const semNorma = lidas.filter((r) => (sugere.get(r.notaId!) ?? 0) === 0);
+  const parado = lote.status === 'parado';
+  const Bloco = ({ titulo, itens, tom, texto }: { titulo: string; itens: ResumoArquivo[]; tom?: string; texto?: (r: ResumoArquivo) => any }) =>
+    itens.length === 0 ? null : (
+      <section class="folha">
+        <h2>{titulo} <span class="num">({itens.length})</span></h2>
+        <ul class="lista">
+          {itens.map((r) => (
+            <li>
+              {r.ok && !parado ? (
+                <a href={`/c/${cnpj.cnpj}/nota/${r.notaId}`}><span class="princ">{r.arquivo}</span><span class="lado">{texto?.(r)}</span></a>
+              ) : (
+                <div class="item"><span class="princ">{r.arquivo}</span><span class={`lado ${tom ?? ''}`}>{texto?.(r)}</span></div>
+              )}
+            </li>
+          ))}
+        </ul>
+      </section>
+    );
   return pagina(c, 'Notas lidas', (
     <>
-      <h1>{lote.status === 'parado' ? 'Lote parado.' : `${lidas.length} ${lidas.length === 1 ? 'nota lida' : 'notas lidas'}.`}</h1>
-      {lote.status === 'parado' && <p>Nada foi processado. As notas deste lote não contam no pacote.</p>}
-      <div class="grade" style="margin-bottom:16px">
-        <div class="cartao"><p class="rotulo">Lidas</p><p class="grande">{lidas.length}</p></div>
-        <div class="cartao"><p class="rotulo">Recusadas</p><p class={`grande ${recusadas.length ? 'erro' : ''}`}>{recusadas.length}</p></div>
-        <div class="cartao"><p class="rotulo">Com item sem norma na base</p><p class={`grande ${comSemNorma ? 'aviso' : ''}`}>{comSemNorma}</p></div>
-        <div class="cartao"><p class="rotulo">Classificadas sem cálculo</p><p class="grande">{comSemCalculo}</p></div>
-      </div>
-      <div class="cartao tabela">
-        <table>
-          <thead><tr><th>Arquivo</th><th>Resultado</th></tr></thead>
-          <tbody>{resumo.map((r) => (
-            <tr>
-              <td>{r.ok && lote.status !== 'parado' ? <a href={`/c/${cnpj.cnpj}/nota/${r.notaId}`}>{r.arquivo}</a> : r.arquivo}</td>
-              <td>{r.ok
-                ? (lote.status === 'parado' ? 'Parada' : notaResumo(porNota.get(r.notaId!)))
-                : <span class="erro">{r.motivo}</span>}</td>
-            </tr>
-          ))}</tbody>
-        </table>
-      </div>
+      <h1>{parado ? 'Lote parado.' : lidas.length === 1 ? '1 nota lida.' : `${lidas.length} notas lidas.`}</h1>
+      <p class="sub">
+        {parado ? 'Nada foi processado. Estas notas não contam no pacote.'
+          : <>{prontas.length} prontas para firmar{semNorma.length > 0 && <> · {semNorma.length} sem norma na base</>}{recusadas.length > 0 && <> · {recusadas.length} recusadas</>}.</>}
+      </p>
+      {!parado && <Bloco titulo="Prontas para firmar" itens={prontas} texto={() => 'Sugestão pronta'} />}
+      {!parado && <Bloco titulo="Sem norma na base" itens={semNorma} tom="sem-norma" texto={() => 'Sem norma na base'} />}
+      <Bloco titulo="Recusadas" itens={recusadas} tom="erro" texto={(r) => r.motivo} />
       <div class="acoes">
-        {primeira && lote.status !== 'parado'
-          ? <a class="botao" href={`/c/${cnpj.cnpj}/nota/${primeira}`}>Ler a primeira nota</a>
-          : <a class="botao" href={`/c/${cnpj.cnpj}/enviar`}>Subir XML</a>}
+        {prontas.length > 0 && !parado
+          ? <a class="botao" href={`/c/${cnpj.cnpj}/proxima`}>Firmar a primeira</a>
+          : <a class="botao" href={`/c/${cnpj.cnpj}/notas`}>Voltar às notas</a>}
+        {prontas.length > 0 && !parado && <a href={`/c/${cnpj.cnpj}/notas`}>Ver todas as notas</a>}
       </div>
     </>
-  ));
+  ), 200, 'notas');
 });
 
-function notaResumo(x?: { sem_norma: number; sem_calculo: number }) {
-  if (!x) return 'Lida';
-  if (x.sem_norma > 0) return <span class="aviso">Sem norma na base em {x.sem_norma} {x.sem_norma === 1 ? 'tributo' : 'tributos'}</span>;
-  if (x.sem_calculo > 0) return 'Classificada. Sem alíquota na base em parte.';
-  return <span class="ok">Sugestão pronta</span>;
-}
-
-// ---------- leitura da nota e firma ----------
+// ---------- leitura da nota e firma: uma tela só ----------
 
 async function carregaNota(c: C) {
   const n = await c.env.DB.prepare('SELECT * FROM nota WHERE id = ? AND cnpj_id = ?')
     .bind(Number(c.req.param('id')), c.get('cnpj').id).first<any>();
   if (!n) return null;
   const { results: sugs } = await c.env.DB.prepare(
-    `SELECT s.*, nm.fonte, nm.artigo, nm.data_norma, nm.ficticio FROM sugestao s LEFT JOIN norma nm ON nm.id = s.norma_id
+    `SELECT s.*, nm.fonte, nm.artigo, nm.texto, nm.data_norma, nm.ficticio FROM sugestao s LEFT JOIN norma nm ON nm.id = s.norma_id
      WHERE s.nota_id = ? ORDER BY s.item_idx, CASE s.tributo WHEN 'ICMS' THEN 1 WHEN 'ISS' THEN 2 WHEN 'IBS' THEN 3 ELSE 4 END`,
   ).bind(n.id).all<any>();
   const firma = await c.env.DB.prepare('SELECT * FROM firma WHERE nota_id = ? ORDER BY id DESC LIMIT 1').bind(n.id).first<any>();
   return { n, itens: JSON.parse(n.itens_json) as NotaLida['itens'], sugs, firma };
 }
 
-function CartaoSugestao({ s }: { s: any }) {
+function LinhaSugestao({ s }: { s: any }) {
   if (s.resultado === 'nao_responde') {
     return (
-      <div class="cartao">
-        <h2>{s.tributo}</h2>
-        <p class="aviso">Sem norma na base para este item. Não sugerimos.</p>
-        <p class="rotulo">{s.motivo}</p>
+      <div class="sug">
+        <div class="sug-topo"><span class="tributo">{s.tributo}</span><span class="sem-norma">Sem norma na base</span></div>
       </div>
     );
   }
+  const calcula = s.aliquota_cpp !== null && s.valor_centavos !== null;
   return (
-    <div class="cartao ia">
-      <h2>Sugestão {s.tributo}</h2>
-      <p>Base legal: {s.fonte}, {s.artigo}, de {fmtData(s.data_norma)}.</p>
-      <p class="rotulo">
+    <div class="sug">
+      <div class="sug-topo">
+        <span class="tributo">{s.tributo}</span>
+        <span class="sug-valor">{calcula ? reais(s.valor_centavos) : '—'}</span>
+      </div>
+      <p class="sug-codigos">
         {s.cst && <>CST {s.cst} · </>}{s.cclass_trib && <>cClassTrib {s.cclass_trib} · </>}
-        {s.aliquota_cpp !== null ? <>Alíquota {fmtAliq(s.aliquota_cpp)} · Valor {reais(s.valor_centavos)}</> : <>Sem alíquota na base: o valor fica em branco.</>}
+        {s.aliquota_cpp !== null ? <>alíquota {fmtAliq(s.aliquota_cpp)}</> : <>alíquota —</>}
       </p>
+      <p class="artigo" style="margin:0">{s.fonte}, {s.artigo} · <span class="mini" style="font-family:var(--mono)">{fmtData(s.data_norma)}</span></p>
+      {!calcula && <p class="mini sem-norma" style="margin:2px 0 0">Sem alíquota na base. Não calcula.</p>}
+      <details><summary>Ver o texto da norma</summary><p>{s.texto}</p></details>
     </div>
   );
 }
 
 app.get('/c/:cnpj/nota/:id', async (c) => {
   const cnpj = c.get('cnpj');
-  const d = await carregaNota(c);
-  if (!d) return pagina(c, 'Nota', <h1>Nota não encontrada.</h1>, 404);
-  const { n, itens, sugs, firma } = d;
-  const ficticia = sugs.some((s) => s.ficticio === 1);
-  return pagina(c, 'Leitura da nota', (
-    <>
-      <h1>Leitura da nota</h1>
-      {ficticia && <div class="ficticio">Base fictícia de desenvolvimento. Nada aqui é norma real.</div>}
-      <div class="cartao tabela">
-        <table><tbody>
-          <tr><th>Tipo</th><td>{n.tipo}</td></tr>
-          {n.tipo === 'NF-e'
-            ? <tr><th>NCM</th><td>{itens.map((i) => fmtNcm(i.ncm ?? '')).join(', ')}</td></tr>
-            : <tr><th>Serviço</th><td>{itens.map((i) => `${i.servico} ${i.descricao}`).join(', ')}</td></tr>}
-          <tr><th>Estado</th><td>{n.uf}</td></tr>
-          <tr><th>Município</th><td>{n.municipio_nome || n.municipio_ibge}</td></tr>
-          <tr><th>ISS</th><td class={n.incide_iss ? 'ok' : ''}>{n.incide_iss ? 'sim' : 'não'}</td></tr>
-          <tr><th>Valor</th><td>{reais(n.valor_centavos)}</td></tr>
-        </tbody></table>
-      </div>
-      {itens.map((item, idx) => (
-        <section>
-          {itens.length > 1 && <h2 style="margin-top:16px">Item {idx + 1}: {item.descricao}</h2>}
-          {sugs.filter((s) => s.item_idx === idx).map((s) => <CartaoSugestao s={s} />)}
-        </section>
-      ))}
-      <p class="nota-legal">Sugestão, não decisão. A IA não inventa norma.</p>
-      {firma ? (
-        <div class="cartao"><p class="ok">{firma.decisao === 'confirmada' ? 'Firmado' : 'Recusado'} por {firma.contador_nome}, CRC {firma.crc}, às {fmtHora(firma.firmado_em)}. Artigo e data no log. Não apaga.</p></div>
-      ) : c.get('usuario').papel === 'contador' ? (
-        <div class="acoes"><a class="botao" href={`/c/${cnpj.cnpj}/nota/${n.id}/firmar`}>Ir para firmar</a></div>
-      ) : (
-        <p>Quem firma é o contador.</p>
-      )}
-    </>
-  ));
-});
-
-app.get('/c/:cnpj/nota/:id/firmar', async (c) => {
-  const cnpj = c.get('cnpj');
   const u = c.get('usuario');
   const d = await carregaNota(c);
-  if (!d) return pagina(c, 'Nota', <h1>Nota não encontrada.</h1>, 404);
-  if (d.firma || u.papel !== 'contador') return c.redirect(`/c/${cnpj.cnpj}/nota/${d.n.id}`, 303);
-  const sugeridas = d.sugs.filter((s) => s.resultado === 'sugere');
-  return pagina(c, 'Firmar', (
+  if (!d) return pagina(c, 'Nota', <h1>Nota não encontrada.</h1>, 404, 'notas');
+  const { n, itens, sugs, firma } = d;
+  const sugeridas = sugs.filter((s) => s.resultado === 'sugere');
+  const ficticia = sugeridas.some((s) => s.ficticio === 1);
+  const ultima = await c.env.DB.prepare('SELECT crc FROM firma WHERE usuario_id = ? ORDER BY id DESC LIMIT 1').bind(u.id).first<{ crc: string }>();
+  return pagina(c, 'Leitura da nota', (
     <>
-      <h1>Firmar</h1>
-      <div class="cartao ia">
-        <h2>Base legal aberta</h2>
-        {sugeridas.length === 0 && <p>Nenhuma sugestão nesta nota. Você firma a sua decisão.</p>}
-        {sugeridas.map((s) => <p>{s.tributo}: {s.fonte}, {s.artigo}, de {fmtData(s.data_norma)}.</p>)}
-        <p class="rotulo">Sugestão, não decisão. O log grava artigo e CRC.</p>
-      </div>
-      <form method="post">
-        <label for="nome">Nome</label>
-        <input id="nome" name="nome" type="text" required value={u.nome} autocomplete="name" />
-        <label for="crc">CRC</label>
-        <input id="crc" name="crc" type="text" required placeholder="1SP123456" pattern="[0-9A-Za-z\-\/ .]{4,20}" />
-        <div class="acoes">
-          <button class="botao" name="decisao" value="confirmada" type="submit">Firmar</button>
-          <button class="secundario" name="decisao" value="recusada" type="submit">Recusar a sugestão</button>
-        </div>
-      </form>
+      <h1>Nota <span class="mono">…{tail(n.chave)}</span></h1>
+      <p class="sub">{n.tipo} · {dataBr(n.data_emissao)} · {cnpj.razao_social}</p>
+      {ficticia && <p class="ficticio">Base de exemplo. Nada aqui é norma real.</p>}
+
+      <p class="rotulo">Lido do XML</p>
+      <table class="linhas">
+        <tbody>
+          {n.tipo === 'NF-e'
+            ? <tr><th>NCM</th><td class="num">{itens.map((i) => fmtNcm(i.ncm ?? '')).join(', ')}</td></tr>
+            : <tr><th>Serviço</th><td>{itens.map((i) => `${i.servico} · ${i.descricao}`).join(', ')}</td></tr>}
+          <tr><th>Estado</th><td>{n.uf}</td></tr>
+          <tr><th>Município</th><td>{n.municipio_nome || n.municipio_ibge}</td></tr>
+          {n.tipo === 'NFS-e' && <tr><th>ISS</th><td>{n.incide_iss ? 'sim' : 'não'}</td></tr>}
+          <tr><th>Valor</th><td class="num">{reais(n.valor_centavos)}</td></tr>
+        </tbody>
+      </table>
+
+      <section class="folha">
+        <p class="rotulo">Sugestão</p>
+        {itens.map((_item, idx) => (
+          <div>
+            {itens.length > 1 && <p class="mini" style="margin-top:12px">Item {idx + 1}: {itens[idx].descricao}</p>}
+            {sugs.filter((s) => s.item_idx === idx).map((s) => <LinhaSugestao s={s} />)}
+          </div>
+        ))}
+        {sugeridas.length === 0 ? (
+          <p style="margin-top:16px"><strong>Sem norma na base para esta nota.</strong><br />Nenhuma norma vigente cobre este caso. Não sugerimos e não há o que firmar. Ligue para o plantão.</p>
+        ) : (
+          <p class="mini" style="margin-top:12px">Sugestão, não decisão. Base {sugeridas[0].versao_base}.</p>
+        )}
+      </section>
+
+      {firma ? (
+        <section class="folha">
+          <div class="carimbo">
+            <p class="display">{firma.decisao === 'confirmada' ? 'Firmada.' : 'Recusada.'}</p>
+            <p style="margin:0">{fmtHora(firma.firmado_em)} · {firma.contador_nome} · CRC <span class="num">{firma.crc}</span></p>
+            <p class="mini" style="margin:6px 0 0;color:inherit;opacity:.85">Artigo e data no log. Não apaga. Hash do XML <span class="num">{String(firma.xml_sha256).slice(0, 8)}…{String(firma.xml_sha256).slice(-4)}</span></p>
+          </div>
+          <div class="acoes"><a class="botao" href={`/c/${cnpj.cnpj}/proxima`}>Próxima nota</a><a href={`/c/${cnpj.cnpj}/notas`}>Voltar às notas</a></div>
+        </section>
+      ) : sugeridas.length === 0 ? (
+        <div class="acoes"><a class="botao" href={`/c/${cnpj.cnpj}/notas`}>Voltar às notas</a></div>
+      ) : u.papel === 'contador' ? (
+        <section class="folha">
+          <h2>Firmar</h2>
+          <form method="post" action={`/c/${cnpj.cnpj}/nota/${n.id}/firmar`}>
+            <div class="campos">
+              <div><label for="nome">Nome</label><input id="nome" name="nome" type="text" required value={u.nome} autocomplete="name" /></div>
+              <div><label for="crc">CRC</label><input id="crc" name="crc" type="text" required value={ultima?.crc ?? ''} placeholder="1SP123456" pattern="[0-9A-Za-z\-\/ .]{4,20}" autocapitalize="characters" /></div>
+            </div>
+            <div class="acoes">
+              <button class="botao" name="decisao" value="confirmada" type="submit">Firmar</button>
+              <button class="link-botao" name="decisao" value="recusada" type="submit">Recusar a sugestão</button>
+            </div>
+          </form>
+        </section>
+      ) : (
+        <section class="folha"><p>Quem firma é o contador.</p><div class="acoes"><a class="botao" href={`/c/${cnpj.cnpj}/notas`}>Voltar às notas</a></div></section>
+      )}
     </>
-  ));
+  ), 200, 'notas');
 });
 
 app.post('/c/:cnpj/nota/:id/firmar', async (c) => {
@@ -720,11 +845,12 @@ app.post('/c/:cnpj/nota/:id/firmar', async (c) => {
   const d = await carregaNota(c);
   if (!d) return c.text('Nota não encontrada.', 404);
   if (d.firma) return c.redirect(`/c/${cnpj.cnpj}/nota/${d.n.id}`, 303);
+  if (!d.sugs.some((s) => s.resultado === 'sugere')) return c.text('Sem norma na base: não há o que firmar.', 400);
   const corpo = await c.req.parseBody();
   const nome = String(corpo.nome ?? '').trim();
   const crc = String(corpo.crc ?? '').trim().toUpperCase();
   const decisao = corpo.decisao === 'recusada' ? 'recusada' : 'confirmada';
-  if (!nome || !/^[0-9A-Z\-\/ .]{4,20}$/.test(crc)) return c.text('Nome e CRC são obrigatórios.', 400);
+  if (!nome || !/^[0-9A-Z\-\/ .]{4,20}$/.test(crc)) return c.text('Digite nome e CRC. Exemplo: 1SP123456.', 400);
   const registro = d.sugs.map((s) => ({
     item: s.item_idx, tributo: s.tributo, resultado: s.resultado, norma: s.norma_id, artigo: s.artigo ?? null,
     data_norma: s.data_norma ?? null, cst: s.cst, cclass_trib: s.cclass_trib, aliquota_cpp: s.aliquota_cpp,
@@ -739,10 +865,10 @@ app.post('/c/:cnpj/nota/:id/firmar', async (c) => {
   return c.redirect(`/c/${cnpj.cnpj}/nota/${d.n.id}`, 303);
 });
 
-app.notFound((c) => c.html(<Layout titulo="Não encontrado"><h1>Página não encontrada.</h1><a class="botao" href="/">Início</a></Layout>, 404));
+app.notFound((c) => c.html(<Layout titulo="Não encontrado"><h1>Página não encontrada.</h1><div class="acoes"><a class="botao" href="/">Início</a></div></Layout>, 404));
 app.onError((err, c) => {
   console.error(err);
-  return c.html(<Layout titulo="Erro"><h1>Algo falhou do nosso lado.</h1><p>Tente de novo. Se persistir, ligue para o plantão.</p></Layout>, 500);
+  return c.html(<Layout titulo="Erro"><h1>Algo falhou do nosso lado.</h1><p class="sub">Tente de novo. Se persistir, ligue para o plantão.</p></Layout>, 500);
 });
 
 export default app;
