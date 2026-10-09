@@ -1,37 +1,46 @@
-# Perguntas em aberto para o time / cliente
+# Perguntas em aberto
 
-Prioridade: 🔴 bloqueia a POC · 🟡 importante · ⚪ pode esperar
+> Atualizado após o [recorte da mesa](recorte-da-mesa.md). Prioridade: 🔴 bloqueia a POC · 🟡 importante · ⚪ pode esperar
 
-## Escopo e documento fiscal
-1. 🔴 A POC é sobre **NF-e (mercadoria, NCM, ICMS)**, **NFS-e (serviço, ISS)** ou as duas? A tela mostra NCM 6104.43.00 (vestuário) numa "nota fiscal de serviço" com ISS — o exemplo é ilustrativo?
-2. 🔴 Qual o setor/CNAE do primeiro cliente? Isso define quais artigos da LC 214 a base inicial precisa ter.
-3. 🔴 O que exatamente a sugestão deve preencher: CST IBS/CBS, `cClassTrib`, alíquota, redução, crédito? Só classificação ou também cálculo?
-4. 🟡 O produto **emite** a nota ou só **classifica** antes de outro emissor (ERP)? Qual ERP/emissor o piloto usa?
-5. 🟡 Como o XML chega: upload manual, pasta, integração com ERP, API?
+## Ainda abertas
 
-## Base legal
-6. 🔴 Quem faz a curadoria da base (LC 214, portarias, ISS municipal)? Há tributarista no time?
-7. 🟡 Que municípios entram primeiro (Campinas só)? Qual a fonte da regra de ISS?
-8. 🟡 "Portaria de 05/10/2026" — é real ou placeholder? Como acompanhar mudanças normativas?
+### Divergências entre recorte e telas
+1. 🔴 **Excedente**: R$ 4 vale acima do teto **de cada pacote** (2.400 / 6.000 / 12.000) ou só acima de **12 mil**? A tela "Teto do pacote" mostra excedente no Meio (6.000).
+2. 🟡 **Ticket médio**: "R$ 13,5 mil com metade entrada e metade cheio" não fecha — (9+24)/2 = 16,5. R$ 13,5 mil é entrada + meio. Qual é a premissa?
+3. 🟡 **Renovação**: renovar o Entrada vira Meio automaticamente (R$ 9 mil → R$ 18 mil no segundo ano)?
+4. 🟡 **Cheio**: "parada já caída" é condição para comprar o Cheio? Quem atesta isso?
 
-## Firma e responsabilidade
-9. 🔴 Basta nome + CRC, ou a firma precisa de **certificado digital** (e-CPF/e-CRC)?
-10. 🟡 O CRC é validado contra o CFC/CRC? Contador do escritório ou interno da empresa?
-11. 🟡 Quem responde juridicamente se a sugestão firmada estiver errada? Já há termo de uso?
+### Escopo fiscal (o que a máquina sugere)
+5. 🔴 "Cálculo de legado" = quais tributos? ICMS e ISS? PIS/COFINS e IPI entram?
+6. 🔴 Para IBS/CBS, a sugestão preenche o quê: CST, `cClassTrib`, alíquota, redução? Só classifica ou também calcula o valor?
+7. 🔴 Qual o **estado** da ida ao mercado e quais **municípios** entram primeiro na base de ISS?
+8. 🔴 Quem faz a **curadoria da base** (LC 214, portarias, ISS municipal) e com que frequência ela é atualizada?
 
-## Rejeição
-12. 🔴 Vocês têm histórico real de rejeições (códigos SEFAZ/Prefeitura) para montar a tabela código → campo?
-13. 🟡 "18 para 2" e "9 para 1" são metas, resultados de piloto ou exemplos? Em que período?
-14. ⚪ O plantão é humano 24h, horário comercial, WhatsApp?
+### Firma e responsabilidade
+9. 🔴 Firmar basta com nome + CRC ou precisa de certificado digital? O CRC é validado em algum cadastro?
+10. 🟡 "Quem assina responde": que termo o contador e o dono aceitam? Quem responde se a sugestão firmada estiver errada?
 
-## Comercial
-15. 🟡 "Primeiro CNPJ R$ 9.000, próximo cheio": desconto de 50% no 1º CNPJ e R$ 18.000 nos demais? Por grupo econômico ou por indicação?
-16. 🟡 Quais planos existem além do "Meio" (6.000 notas)? O teto é por mês ou por ano?
-17. 🟡 Excedente R$ 4/nota: cobrado como? "Parar" bloqueia a emissão ou só a sugestão?
-18. ⚪ O escritório que indica recebe comissão? Ele vê o painel dos clientes?
-19. ⚪ Fila de contratos (pendente/confirmada/parada): o que move um contrato entre os status?
+### Operação
+11. 🔴 Em que formato o escritório **devolve a rejeição**: XML de retorno, print, texto colado? Vocês têm histórico real de códigos de rejeição?
+12. 🔴 Como medir a **parada antes** (linha de base) para provar a queda nas semanas 2–4?
+13. 🟡 Plantão: horário, quem atende, qual é o SLA da sexta?
+14. ⚪ O escritório recebe algo por indicar (comissão)? Ele vê o painel dos CNPJs que indicou?
 
-## POC
-20. 🔴 Prazo, orçamento e quem valida a POC? Há escritório piloto com contadores disponíveis para o conjunto-ouro?
-21. 🟡 Podemos usar XMLs reais (anonimizados)?
-22. ⚪ A POC evolui para produto ou é descartável? Preferência de stack/nuvem?
+### POC
+15. 🔴 Qual é o **primeiro escritório** (semana 1) e quantos XMLs reais ele pode ceder, anonimizados?
+16. 🟡 A POC evolui para o v0 de produção ou é descartável? Há preferência de stack ou nuvem?
+
+## Respondidas pelo recorte
+| Pergunta | Resposta |
+|---|---|
+| NF-e ou NFS-e? | As duas |
+| Emite ou classifica? | Classifica a nota que o escritório já emite; ERP não entra |
+| Como o XML chega? | Upload do XML que o escritório já emite |
+| Quem paga, quem indica? | Dono paga; escritório de 10–30 pessoas indica e não paga |
+| Planos e tetos | Entrada 2.400 / R$ 9 mil; Meio 6.000 / R$ 18 mil; Cheio 12.000 / R$ 24 mil |
+| Teto é anual ou mensal? | Anual, com vencimento no dia 1 |
+| Rejeitada conta de novo? | Não |
+| Fila de contratos? | Saiu |
+| Busca norma na web? | Não; só base interna |
+| Plantão | Gente e telefone |
+| Critério de sucesso | Parada caindo nas semanas 2–4; renovação no dia 1 |

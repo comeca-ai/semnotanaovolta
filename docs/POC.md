@@ -1,7 +1,8 @@
 # Sugestão de implementação — POC
 
-Objetivo: em **3–4 semanas**, provar com dados reais (ou realistas) que o motor **sugere com base legal rastreável**,
-o **contador firma** e uma **rejeição é explicada pelo campo** — as 5 telas navegáveis ponta a ponta.
+Objetivo: em **4 semanas**, com **um escritório real**, provar que **a parada cai**. O motor **sugere com artigo e data**,
+o **contador firma** e, quando a nota volta, o sistema **aponta o campo**. O ritmo segue o recorte da mesa: semana 1 com um
+escritório, semanas 2–4 com a parada medida, e no dia 1 o cliente renova ou sai.
 
 ## 1. Hipóteses que a POC precisa provar
 | # | Hipótese | Como medir na POC |
@@ -10,21 +11,25 @@ o **contador firma** e uma **rejeição é explicada pelo campo** — as 5 telas
 | H2 | "Não sugere" acontece quando deve (sem alucinar) | Notas fora da base → 100% "não sugere" |
 | H3 | O contador confia e firma mais rápido | Tempo leitura→firma; % confirmadas sem edição |
 | H4 | Códigos de rejeição viram campo + ação clara | Top 20 códigos de rejeição mapeados; teste com rejeições reais do escritório |
-| H5 | O cliente entende teto/excedente | Teste de usabilidade da tela T4 com 3–5 donos de empresa |
+| H5 | O cliente entende teto/excedente | Teste de usabilidade da tela Teto do pacote com 3–5 donos de empresa |
+| **H0** | **A parada cai** (métrica-norte) | Rejeições SEFAZ e prefeitura por semana: linha de base × semanas 2–4 |
 
 ## 2. Escopo
 
 **Dentro**
-- Upload de XML (NF-e **ou** NFS-e — escolher um; ver PERGUNTAS #1).
-- Base interna pequena e curada: trechos da LC 214 + 1 portaria datada + ISS de **1 município** (Campinas/SP).
+- Entrar (login simples) e **escolher o CNPJ do dono**.
+- Upload de XML **NF-e e NFS-e**, os que o escritório já emite.
+- Base interna curada: trechos da LC 214, portaria com data e ISS dos municípios dos ~20 CNPJs do escritório piloto. Sem busca na web.
 - Motor (recuperação + LLM restrito + validador) e tela "Leitura da nota".
 - Firma com nome + CRC, log append-only.
-- "Nota voltou" com rejeições **simuladas** a partir de uma tabela de códigos.
-- "Teto do pacote" com contador de uso e decisão Parar/Seguir (sem cobrança real).
-- Painel "Contrato de cálculo" com dados seed.
+- "Nota voltou" com o **retorno que o escritório devolve**, SEFAZ e prefeitura separadas: código, campo e plantão.
+- "Teto do pacote" com os tetos Entrada 2.400 / Meio 6.000 / Cheio 12.000, aviso **antes** e Parar/Seguir. Rejeitada devolvida não conta de novo. Sem cobrança real.
+- Painel "Contrato de cálculo" (tela escolhida), **sem a fila de contratos**.
+- Indicador de **parada** por semana.
+- Landing de uma frase: "A nota sem volta", com preço e vencimento na primeira dobra e o botão "Ver na sua nota".
 
 **Fora** (como o próprio diagrama diz: *login, preço e teto ficam fora do motor*)
-- Transmissão real para SEFAZ/Prefeitura, certificado digital, emissão de nota.
+- ERP, transmissão real para SEFAZ/Prefeitura, emissão de nota, guia, busca de norma na web.
 - Cobrança/billing real, multi-plano completo, portal de indicação.
 - Login robusto (no POC: usuário fixo ou magic link simples).
 
@@ -70,12 +75,15 @@ nunca do modelo; versão da base gravada junto com a sugestão.
 ## 5. Estrutura de pastas proposta
 ```
 app/
-  contrato/[id]/page.tsx        # T1 Contrato de cálculo
+  page.tsx                      # Landing "A nota sem volta"
+  entrar/page.tsx               # login + escolher CNPJ
+  contrato/[cnpj]/page.tsx      # Contrato de cálculo
   notas/nova/page.tsx           # upload XML
-  notas/[id]/page.tsx           # T2 Leitura da nota
+  notas/[id]/page.tsx           # Leitura da nota
   notas/[id]/firmar/page.tsx    # firma (bloco direito do T1)
-  notas/[id]/voltou/page.tsx    # T3 Nota voltou
-  pacote/page.tsx               # T4 Teto do pacote
+  notas/[id]/voltou/page.tsx    # Nota voltou
+  pacote/page.tsx               # Teto do pacote
+  parada/page.tsx               # indicador semanal
   api/...                       # rotas da SPEC §7.3
 lib/
   xml/parse.ts                  # NF-e / NFS-e → campos
@@ -93,12 +101,14 @@ eval/
 ## 6. Cronograma (4 semanas)
 | Semana | Entrega |
 |---|---|
-| 1 | Repositório, banco + migrations, parser XML, seed da base legal, tela T2 com leitura (sem IA) |
-| 2 | Motor (busca + LLM restrito + validador), card de sugestão, conjunto-ouro e primeira avaliação |
-| 3 | Firma + log, "Nota voltou" com tabela de códigos, "Teto do pacote" |
-| 4 | Painel "Contrato de cálculo", ajustes visuais, rodada com 2–3 contadores, relatório H1–H5 |
+| 0 (preparo) | Banco + migrations, parser NF-e/NFS-e, base legal do estado e dos municípios do piloto, linha de base de parada do escritório |
+| 1 | Entrar/CNPJ, leitura, motor e firma em uso pelo **primeiro escritório** |
+| 2 | Nota voltou + retorno do escritório, teto do pacote, indicador de parada |
+| 3–4 | Parada medida semanalmente, ajuste da base e da tabela de códigos, relatório H0–H5; dia 1: renova ou sai |
 
 ## 7. Critério de "POC aprovada"
+- **Parada menor** nas semanas 2–4 do que na linha de base, SEFAZ e prefeitura (meta de referência: 18→2 e 9→1).
+- **Renovação** no dia 1.
 - ≥ 85% de acerto no conjunto-ouro **e 0 artigo inexistente** citado.
 - 100% das notas fora da base retornam "não sugere".
 - Contadores firmam ≥ 70% das sugestões sem editar.
@@ -111,4 +121,5 @@ eval/
 | Curadoria da base é o gargalo (não a IA) | Começar com escopo estreito (1 setor/NCMs + 1 município); ter tributarista no time |
 | Responsabilidade jurídica da sugestão | "Sugestão, não decisão" na interface + termo de uso + firma por CRC |
 | Dados reais de clientes (LGPD) | XMLs anonimizados no conjunto-ouro; consentimento do escritório piloto |
-| Confusão NF-e × NFS-e | Escolher um tipo de documento na POC |
+| Base de ISS por município é cara de manter | Começar só pelos municípios dos CNPJs do piloto; é o ativo de longo prazo |
+| Sem linha de base, não há prova | Coletar as rejeições das 4 semanas anteriores antes da semana 1 |
