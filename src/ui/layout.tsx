@@ -100,7 +100,12 @@ input[name=crc]{font-family:var(--mono)}
 /* landing */
 .capa{padding:56px 0 40px}
 .capa h1{font-size:clamp(3.2rem,11vw,6.5rem);line-height:.92;letter-spacing:-.035em;margin-bottom:28px}
-.capa .lead{font-size:1.25rem;max-width:36ch;color:var(--tinta-2)}
+.capa .lead{font-size:1.25rem;max-width:44ch;color:var(--tinta-2)}
+.faixa{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--fio-forte);border-radius:6px;margin:28px 0 24px;background:#fffdf8}
+.faixa>div{padding:16px 18px;border-left:1px solid var(--fio)}
+.faixa>div:first-child{border-left:0}
+.faixa p{margin:0}
+.faixa-valor{font-family:var(--serifa);font-weight:600;font-size:1.9rem;letter-spacing:-.02em;line-height:1.15}
 .preco{font-family:var(--serifa);font-size:1.6rem;margin:28px 0 0}
 .preco .num{font-family:var(--serifa);font-size:inherit}
 .tabela-pacotes td,.tabela-pacotes th{padding:12px 8px 12px 0}
@@ -116,6 +121,9 @@ input[name=crc]{font-family:var(--mono)}
   .botao{width:100%}
   .campos{grid-template-columns:1fr}
   .linhas th{width:42%}
+  .faixa{grid-template-columns:1fr}
+  .faixa>div{border-left:0;border-top:1px solid var(--fio)}
+  .faixa>div:first-child{border-top:0}
   .lista a,.lista .item{flex-direction:column;gap:2px}
   .lista .lado{text-align:left}
 }

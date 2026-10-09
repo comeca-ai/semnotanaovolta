@@ -86,49 +86,47 @@ app.get('/', (c) =>
   c.html(
     <Layout
       titulo="A nota sem volta"
-      descricao="Seu contador confirma o imposto na nota, com artigo e data. R$ 9 mil por ano no primeiro CNPJ. Vence dia 1."
+      descricao="Seu contador confirma o imposto, com artigo e data. R$ 9 mil por ano no primeiro CNPJ do dono. Vence dia 1."
       plantao={plantao(c)}
     >
       <section class="capa">
         <h1>A nota sem volta.</h1>
-        <p class="lead">Seu contador confirma o imposto na nota, com artigo e data. Na sexta, sem susto.</p>
-        <p class="preco">R$ 9 mil por ano no primeiro CNPJ. R$ 18 mil nos próximos.</p>
-        <p class="mini" style="margin-top:6px">Vence dia 1.</p>
+        <p class="display" style="font-size:1.7rem;margin:0 0 6px">Sexta sem susto.</p>
+        <p class="lead">Seu contador confirma o imposto, com artigo e data.</p>
+
+        <div class="faixa" role="group" aria-label="Preço">
+          <div><p class="rotulo">Primeiro CNPJ do dono</p><p class="faixa-valor">R$ 9 mil</p><p class="mini">por ano</p></div>
+          <div><p class="rotulo">Próximo CNPJ</p><p class="faixa-valor">R$ 18 mil</p><p class="mini">por ano</p></div>
+          <div><p class="rotulo">Vence</p><p class="faixa-valor">dia 1</p><p class="mini">de cada ano</p></div>
+        </div>
+
+        <p style="margin:0"><strong>Quem indica:</strong> o escritório.</p>
+        <p><strong>Quem paga:</strong> o dono da empresa.</p>
         <div class="acoes"><a class="botao" href="/entrar">Ver na sua nota</a></div>
       </section>
 
       <section class="folha">
-        <p>Se a nota voltar, o contador sabe o campo e tem telefone.</p>
-        <p>Plantão: sexta, 18h às 22h. Sábado, 9h às 12h. <strong class="mono">{c.env.PLANTAO_TELEFONE}</strong></p>
-        <p>Quem indica: o escritório contábil. Quem paga: o dono da empresa.</p>
-      </section>
-
-      <section class="folha">
-        <h2>Como se prova.</h2>
-        <p>Cada sugestão cita a norma da base, como a LC 214, e a data dela. Sem norma na base, o sistema não responde.</p>
-        <p>O contador confirma e o CRC fica no log.</p>
-        <p>Medimos a parada toda semana, SEFAZ e prefeitura separadas. No dia 1, você renova ou sai.</p>
+        <p>Parada se mede por semana, SEFAZ e prefeitura separadas.</p>
+        <p>Plantão <strong class="mono">{c.env.PLANTAO_TELEFONE}</strong>, sexta 18h–22h, sábado 9h–12h.</p>
       </section>
 
       <section class="folha">
         <h2>Preço escrito. Excedente escrito antes.</h2>
         <table class="linhas tabela-pacotes">
           <thead>
-            <tr><th>Pacote</th><th>Notas por ano</th><th class="dir">Por ano</th></tr>
+            <tr><th></th><th>Entrada</th><th>Meio</th></tr>
           </thead>
           <tbody>
-            <tr><td>Entrada · primeiro CNPJ</td><td class="num">até 2.400</td><td class="dir num">R$ 9 mil</td></tr>
-            <tr><td>Meio · próximo CNPJ ou renovação</td><td class="num">até 6.000</td><td class="dir num">R$ 18 mil</td></tr>
-            <tr><td>Cheio · só depois que a parada cair</td><td class="num">até 12.000</td><td class="dir num">R$ 24 mil</td></tr>
+            <tr><th>Quando</th><td>Primeiro CNPJ do dono</td><td>Próximo CNPJ ou renovação</td></tr>
+            <tr><th>Notas por ano</th><td class="num">até 2.400</td><td class="num">até 6.000</td></tr>
+            <tr><th>Por ano</th><td class="num">R$ 9 mil</td><td class="num">R$ 18 mil</td></tr>
           </tbody>
         </table>
-        <p style="margin-top:14px">O Cheio não se compra. Abre quando a parada cai no seu CNPJ, e quem mede é o sistema, não o vendedor.</p>
-        <p>Acima do teto do seu pacote: R$ 4 por nota, avisado antes da nota que passa.</p>
-        <p>Nota devolvida e reemitida não conta de novo. Vence dia 1, por CNPJ. Sem projeto, sem implantação.</p>
-        <div class="acoes"><a class="botao" href="/entrar">Ver na sua nota</a></div>
+        <p style="margin-top:14px"><strong>Cheio, R$ 24 mil, só depois da parada caída.</strong> Quem mede é o sistema, não o vendedor.</p>
+        <p>Acima do teto do seu pacote: R$ 4 por nota, avisado antes da nota que passa. Nota devolvida e reemitida não conta de novo. Sem projeto, sem implantação.</p>
       </section>
 
-      <p class="mini" style="margin-top:40px">Sugestão, não decisão. Não é parecer e não substitui contador. <a href="/termo">Ler o termo</a>.</p>
+      <p class="mini" style="margin-top:40px">Sugestão, não decisão. LC 214 citada na leitura. Não é parecer e não substitui contador. <a href="/termo">Ler o termo</a>.</p>
     </Layout>,
   ),
 );
@@ -154,19 +152,14 @@ app.get('/entrar', (c) =>
   pagina(c, 'Entrar', (
     <>
       <h1>Entrar</h1>
-      <p class="sub">Digite seu e-mail. O link chega na hora.</p>
       <form method="post" action="/entrar">
-        <label for="email">E-mail</label>
+        <label for="email">E-mail do escritório</label>
         <input id="email" name="email" type="email" required autocomplete="email" autofocus />
         <div class="acoes"><button class="botao" type="submit">Receber o link</button></div>
       </form>
-      <p class="mini" style="margin-top:20px">O link vale por 15 minutos e uma vez só.</p>
-      <ol class="mini" style="margin:20px 0 0;padding-left:1.2rem;line-height:1.8">
-        <li>Você entra pelo link.</li>
-        <li>Escolhe o CNPJ.</li>
-        <li>Sobe o XML da nota. Vê a sugestão, com artigo e data.</li>
-        <li>O contador firma.</li>
-      </ol>
+      <p class="mini" style="margin-top:20px">O link vale 15 minutos e uma vez.</p>
+      <p style="margin-top:20px">Próximo passo: escolher o CNPJ do dono e subir o XML da nota.</p>
+      <p class="mini">Dono da empresa: entre com o e-mail que o escritório cadastrou.</p>
     </>
   )),
 );
