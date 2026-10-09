@@ -5,5 +5,6 @@ Cálculo de legado, IBS/CBS e ISS na nota que o escritório já emite. A máquin
 - [Especificação (negócio + técnica)](docs/SPEC.md)
 - [Sugestão de implementação da POC](docs/POC.md)
 - [Perguntas em aberto](docs/PERGUNTAS.md)
-- [Recorte da mesa (decisões)](docs/recorte-da-mesa.md)
+- [Decisões da mesa](docs/decisoes-da-mesa.md)
+- [Recorte da mesa](docs/recorte-da-mesa.md)
 - [Modelos de tela](docs/telas/)
