@@ -1,46 +1,31 @@
-# Perguntas em aberto
+# Perguntas
 
-> Atualizado após o [recorte da mesa](recorte-da-mesa.md). Prioridade: 🔴 bloqueia a POC · 🟡 importante · ⚪ pode esperar
+> Fechadas pela mesa em 09/10/2026 — ver [`decisoes-da-mesa.md`](decisoes-da-mesa.md).
 
-## Ainda abertas
+## 🔴 Único bloqueio
+**15. Qual é o primeiro escritório?** Sem nome, XML e municípios, a semana 1 não existe. Dele dependem:
+- o **estado** e os **municípios** da base (7);
+- a **tabela de códigos de rejeição**, escrita a partir do histórico real dele (11);
+- a **linha de base**: rejeições das 4 semanas anteriores, mesmo lote de CNPJs, SEFAZ e prefeitura separadas (12).
 
-### Divergências entre recorte e telas
-1. 🔴 **Excedente**: R$ 4 vale acima do teto **de cada pacote** (2.400 / 6.000 / 12.000) ou só acima de **12 mil**? A tela "Teto do pacote" mostra excedente no Meio (6.000).
-2. 🟡 **Ticket médio**: "R$ 13,5 mil com metade entrada e metade cheio" não fecha — (9+24)/2 = 16,5. R$ 13,5 mil é entrada + meio. Qual é a premissa?
-3. 🟡 **Renovação**: renovar o Entrada vira Meio automaticamente (R$ 9 mil → R$ 18 mil no segundo ano)?
-4. 🟡 **Cheio**: "parada já caída" é condição para comprar o Cheio? Quem atesta isso?
+## Fechadas
+| # | Tema | Decisão |
+|---|---|---|
+| 1 | Excedente | R$ 4 acima do teto do pacote **daquele CNPJ** (2.400 / 6.000 / 12.000), escrito antes |
+| 2 | Ticket médio | R$ 13,5 mil = (Entrada 9 + Meio 18) / 2. Cheio fora da média |
+| 3 | Renovação | 1º CNPJ vai a R$ 18 mil / 6.000 no dia 1 do 2º ano. Demais CNPJs do dono nascem a R$ 18 mil |
+| 4 | Cheio | Só com parada já caída **naquele CNPJ**, SEFAZ e prefeitura separadas, atestada pelo **indicador do sistema** |
+| 5 | Legado | v0 = **ICMS e ISS**. PIS/COFINS e IPI fora |
+| 6 | IBS/CBS | CST, cClassTrib e alíquota só se estiverem na base (artigo + data). Calcula valor só com alíquota da base; sem alíquota, classifica e não calcula |
+| 7 | Estado/municípios | Estado do 1º escritório que ceder XML; municípios dos CNPJs dele |
+| 8 | Curadoria | Tributarista do time. Toda portaria de IBS/CBS ou ISS dos municípios do piloto entra antes do dia útil seguinte, com vigência. Site de prefeitura não é fonte na hora |
+| 9 | Firma | Nome + CRC digitados por quem está logado. Sem certificado, sem consulta de CRC. Vai para o termo |
+| 10 | Responsabilidade | Responde quem assinou. Termo aceito por contador **e** dono antes do 1º XML. Sem termo, não sobe nota |
+| 11 | Rejeição | Arquivo de retorno do escritório (XML se houver; senão código + órgão colados) |
+| 12 | Linha de base | 4 semanas anteriores, mesmo lote de CNPJs, SEFAZ e prefeitura separadas |
+| 13 | Plantão | Sex 18h–22h e sáb 9h–12h, telefone, uma pessoa. Fora da janela, a tela mostra o horário; sem SLA |
+| 14 | Escritório | Sem comissão no v0. Painel dos indicados só após a 1ª renovação |
+| 16 | Destino da POC | Vira v0 se a parada cair **e** houver renovação no dia 1. Se não cair, descarta o fluxo e mantém a base. Stack é sugestão (TypeScript), não decisão de produto |
 
-### Escopo fiscal (o que a máquina sugere)
-5. 🔴 "Cálculo de legado" = quais tributos? ICMS e ISS? PIS/COFINS e IPI entram?
-6. 🔴 Para IBS/CBS, a sugestão preenche o quê: CST, `cClassTrib`, alíquota, redução? Só classifica ou também calcula o valor?
-7. 🔴 Qual o **estado** da ida ao mercado e quais **municípios** entram primeiro na base de ISS?
-8. 🔴 Quem faz a **curadoria da base** (LC 214, portarias, ISS municipal) e com que frequência ela é atualizada?
-
-### Firma e responsabilidade
-9. 🔴 Firmar basta com nome + CRC ou precisa de certificado digital? O CRC é validado em algum cadastro?
-10. 🟡 "Quem assina responde": que termo o contador e o dono aceitam? Quem responde se a sugestão firmada estiver errada?
-
-### Operação
-11. 🔴 Em que formato o escritório **devolve a rejeição**: XML de retorno, print, texto colado? Vocês têm histórico real de códigos de rejeição?
-12. 🔴 Como medir a **parada antes** (linha de base) para provar a queda nas semanas 2–4?
-13. 🟡 Plantão: horário, quem atende, qual é o SLA da sexta?
-14. ⚪ O escritório recebe algo por indicar (comissão)? Ele vê o painel dos CNPJs que indicou?
-
-### POC
-15. 🔴 Qual é o **primeiro escritório** (semana 1) e quantos XMLs reais ele pode ceder, anonimizados?
-16. 🟡 A POC evolui para o v0 de produção ou é descartável? Há preferência de stack ou nuvem?
-
-## Respondidas pelo recorte
-| Pergunta | Resposta |
-|---|---|
-| NF-e ou NFS-e? | As duas |
-| Emite ou classifica? | Classifica a nota que o escritório já emite; ERP não entra |
-| Como o XML chega? | Upload do XML que o escritório já emite |
-| Quem paga, quem indica? | Dono paga; escritório de 10–30 pessoas indica e não paga |
-| Planos e tetos | Entrada 2.400 / R$ 9 mil; Meio 6.000 / R$ 18 mil; Cheio 12.000 / R$ 24 mil |
-| Teto é anual ou mensal? | Anual, com vencimento no dia 1 |
-| Rejeitada conta de novo? | Não |
-| Fila de contratos? | Saiu |
-| Busca norma na web? | Não; só base interna |
-| Plantão | Gente e telefone |
-| Critério de sucesso | Parada caindo nas semanas 2–4; renovação no dia 1 |
+### Respondidas antes, pelo recorte
+NF-e e NFS-e · classifica a nota que o escritório já emite, sem ERP · upload de XML · dono paga, escritório indica · pacotes Entrada/Meio/Cheio, anuais, vencimento dia 1 · rejeitada devolvida não conta de novo · fila de contratos saiu · sem busca na web · plantão é gente e telefone.
