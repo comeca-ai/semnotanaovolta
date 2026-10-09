@@ -1,200 +1,195 @@
-# Sem nota não volta — Especificação (negócio + técnica)
+# A nota sem volta — Especificação (negócio + técnica)
 
-> Versão 0.1 — 09/10/2026. Montada a partir dos 5 modelos de tela e do diagrama do motor em [`docs/telas/`](telas/).
-> A conversa original (link do Grok) não pôde ser lida neste ambiente; tudo que é **inferência** está marcado com 🔎 e
-> tudo que precisa de **decisão** está em [`PERGUNTAS.md`](PERGUNTAS.md).
+> Versão 0.2 — 09/10/2026. Fontes: [recorte da mesa](recorte-da-mesa.md) (decisões) e [modelos de tela](telas/).
+> Quando a tela e o recorte divergem, **vale o recorte**. 🔎 = inferência minha; perguntas em [`PERGUNTAS.md`](PERGUNTAS.md).
+> Nome em discussão: **anotasemvolta.com.br**.
 
 ---
 
-## 1. Resumo em uma frase
+## 1. O que se vende
+Cálculo do **imposto legado** (ICMS/ISS etc. 🔎), de **IBS/CBS** e de **ISS** na nota que o escritório **já emite**.
+A máquina **sugere, com artigo e data**. O **contador confirma** e o **CRC fica no log**.
 
-Um **assistente de classificação tributária IBS/CBS (Reforma Tributária, LC 214/2025)** que lê a nota fiscal,
-**sugere** o enquadramento citando **só artigos que existem numa base legal interna e datada**, exige que um
-**contador com CRC firme** a decisão, registra tudo em log auditável e, quando a nota é rejeitada (SEFAZ ou
-Prefeitura), **aponta o campo que causou a rejeição** — para que a nota não "volte".
+O que se compra: **a nota que não volta, com plantão na rejeição de sexta** — "a sexta sem susto".
 
-O nome resume a promessa: **nota emitida com o produto não volta** (não é rejeitada). Os números da tela de contrato
-("Rejeição SEFAZ 18 para 2", "Rejeição Prefeitura 9 para 1") indicam a métrica de valor: queda de rejeições antes × depois. 🔎
+**Não é**: troca de ERP; a máquina decidindo o imposto; projeto de implantação; guia de recolhimento; motor para grupo com departamento fiscal.
 
-## 2. Contexto de negócio
+## 2. Para quem
 
-### 2.1 Problema
-- A partir de 2026 as notas (NF-e, NFC-e, NFS-e) passam a carregar os novos grupos de **IBS e CBS** (CST, `cClassTrib`,
-  alíquotas). A regra é nova, muda por portaria/regulamentação e erros geram **rejeição** na SEFAZ ou na Prefeitura.
-- Rejeição = nota parada, faturamento parado, retrabalho do escritório contábil e risco de autuação.
-- IA genérica "alucina" norma. Contador não pode assinar algo sem base legal rastreável.
-
-### 2.2 Proposta de valor
-| Para quem | Valor |
+| | Definição |
 |---|---|
-| Empresa (dono — quem paga) | Menos notas rejeitadas, faturamento que não trava, custo previsível (pacote com teto) |
-| Escritório contábil (quem indica) | Produtividade, rastreabilidade (artigo + CRC + horário), canal de receita/indicação |
-| Contador (quem firma) | Sugestão com fundamento, não decisão; responsabilidade documentada |
+| **ICP (quem paga)** | Dono de empresa média — faturamento de alguns milhões a algumas dezenas de milhões, **mais de um município**, **sem departamento fiscal** |
+| **Canal único (quem indica)** | Escritório contábil de **um estado**, **10 a 30 pessoas**. Indica, **não paga** |
+| **Quem firma** | Contador (CRC) — "quem assina responde" |
+| **Fora** | MEI; grupos que já têm Synchro ou Sovos |
 
-### 2.3 Princípios do produto (tirados literalmente das telas)
-1. **"Sugestão, não decisão."** A IA nunca emite/decide sozinha; o contador firma.
-2. **"A IA não inventa norma."** O modelo só pode escolher artigo presente na base interna; se não houver, **não sugere**.
-3. **"A IA aponta o campo. Não julga o Fisco."** Na rejeição, o produto localiza o campo, não discute o mérito.
-4. **"O log grava artigo e CRC."** Toda decisão é auditável: artigo, data da norma, CRC, horário.
-5. **"Excedente R$ 4, escrito antes."** Nada de cobrança surpresa: o cliente vê o custo antes e escolhe Parar/Seguir.
-6. **Base legal com data** ("portaria de 05/10/2026"): toda sugestão vale para uma versão datada da norma.
+Referência de preço × porte (FDC): médias entre R$ 4,8 mi e R$ 300 mi de faturamento; R$ 18 mil/ano ≈ 0,4% no piso e 0,02% na média (R$ 77,9 mi).
 
-### 2.4 Atores
-| Ator | Papel |
-|---|---|
-| **Dono da empresa** | Contratante/pagador. Decide seguir ou parar quando bate o teto. |
-| **Escritório contábil** | Canal de indicação ("Quem indica: Escritório Exemplo"). 🔎 Pode operar a ferramenta pelos clientes. |
-| **Contador (CRC)** | Revisa a sugestão e **firma** (ex.: Maria Souza, CRC 1SP123456). |
-| **Plantão** | Suporte humano por telefone, visível em todas as telas de erro. |
-| **Curador da base legal** (interno) | Mantém LC 214, portarias com data e tabela de ISS por município. 🔎 |
+## 3. Oferta e pacotes (regra comercial)
 
-### 2.5 Modelo comercial (tela "Contrato de cálculo" + "Teto do pacote")
-- Contrato **anual**: R$ 18.000/ano, vencimento **dia 1** (de cada ano).
-- **Primeiro CNPJ: R$ 9.000; próximo CNPJ: preço cheio.** 🔎 Interpretação mais provável: 50% de desconto no primeiro
-  CNPJ do grupo/indicação; demais CNPJs a R$ 18.000. (A confirmar — ver perguntas.)
-- **Planos por pacote de notas** (ex.: "Plano Meio" = 6.000 notas autorizadas). 🔎 Há outros planos (ex.: Início/Meio/Topo).
-- **Excedente R$ 4 por nota** acima do teto, informado **antes** de emitir; cliente escolhe **Parar** ou **Seguir**.
-- Indicação por escritório contábil → possível comissão/rev-share. 🔎
-- **Fila de contratos**: Pendente (4) / Confirmada (11) / Parada (0) — pipeline comercial/operacional de contratos.
+| Pacote | Quando | Notas/ano | Preço/ano |
+|---|---|---|---|
+| **Entrada** | Primeiro CNPJ do dono | até 2.400 | R$ 9 mil |
+| **Meio** | Segundo CNPJ ou renovação | até 6.000 | R$ 18 mil |
+| **Cheio** | Vários estados, parada já caída | até 12.000 | R$ 24 mil |
 
-### 2.6 Métricas de sucesso
-- **Taxa de rejeição** SEFAZ e Prefeitura (antes × depois) — métrica-norte. Ex.: 18→2 e 9→1.
-- % de notas com sugestão (cobertura da base) vs. "não sugere".
-- % de sugestões confirmadas sem alteração pelo contador (precisão percebida).
-- Tempo médio da leitura até "firmar".
-- Consumo do pacote e receita de excedente.
+Regras:
+- R1 Fee **anual**, **vencimento no dia 1**. Preço **escrito**, sem projeto.
+- R2 **Excedente R$ 4 por nota autorizada**, informado **antes** ("escrito antes"). O aviso de estouro aparece **na tela antes da próxima** nota.
+- R3 **Nota rejeitada que o sistema devolveu não conta de novo** (a reemissão da mesma nota não consome pacote).
+- R4 Conta **notas autorizadas**, não notas processadas. 🔎
+- R5 Escala pelo **segundo CNPJ do mesmo dono** (Entrada → Meio), não pelo segundo estado.
 
-## 3. Jornadas
+⚠️ Divergências a resolver (ver PERGUNTAS):
+- O recorte diz "acima de **12 mil**: R$ 4", mas a tela T4 mostra excedente no **Meio (6.000)**. Proposta: excedente vale **acima do teto de cada pacote**.
+- "Ticket médio R$ 13,5 mil com metade entrada e metade cheio": (9+24)/2 = **16,5**; 13,5 = (9+18)/2 (**entrada + meio**).
 
-### J1 — Nota nova (caminho feliz)
-1. Entra o **XML da nota** (upload ou integração 🔎).
-2. **Leitura da nota**: o sistema extrai NCM, estado, município, ISS (sim/não), valor.
-3. **Motor** cruza com a base interna e devolve **Sugestão IBS/CBS** com **artigo e data** da norma.
-4. Usuário clica **Ir para firmar** → tela de firma mostra base legal + contador.
-5. **Contador confirma (CRC)** → **Firmar**.
-6. Log grava **artigo, CRC, horário** (+ versão da base, hash do XML).
-7. Antes de seguir, checa **teto do pacote**; se a nota passa do teto, mostra o excedente e pede **Parar/Seguir**.
+## 4. Tese e prova
+- **Métrica-norte: "parada"** = notas rejeitadas/paradas por SEFAZ ou prefeitura. "Sem parada caindo, não há empresa."
+- **Prova = a semana**: semana 1 com um escritório; semanas 2–4 com parada **medida**; dia 1 do mês seguinte **renova ou sai**.
+- Exemplo de meta nas telas: SEFAZ 18→2, Prefeitura 9→1.
+- **Ativo de longo prazo**: a **base de ISS municipal**, se a regra municipal não simplificar até 2033 (transição EC 132/2023).
 
-### J2 — Motor não encontra base
-- O modelo **não sugere**. A nota vai direto para o contador decidir manualmente; mesmo assim a firma e o log
-  (com a justificativa do contador) são obrigatórios.
+## 5. Princípios do produto
+1. **Sugestão, não decisão.** A IA não decide o imposto.
+2. **Só artigo que está na base.** Sem artigo, **não responde**. A IA não inventa norma.
+3. **Base interna, não web**: LC 214, portaria **com data**, ISS do município. **Não busca em site na hora.**
+4. **Sem artigo aberto e CRC no log, não sobe.**
+5. **A IA aponta o campo. Não julga o Fisco.**
+6. **SEFAZ e prefeitura no mesmo peso** (município do mesmo tamanho que o estado).
+7. **Plantão é gente e telefone.**
+8. **IA é uma função, na leitura.** Regra no servidor.
 
-### J3 — Nota voltou (rejeição)
-1. Chega o retorno da SEFAZ/Prefeitura com **código e campo** (ex.: SEFAZ código 999, campo NCM; Prefeitura código 000, campo ISS).
-2. Tela **"Nota voltou"** lista as rejeições, aponta o campo, mostra o **Plantão**.
-3. **Voltar à nota** → reabre a leitura com o campo destacado para correção → refaz J1.
+## 6. Fluxo (decidido)
+1. **Entrar.**
+2. **Escolher o CNPJ do dono.**
+3. **Subir o XML** (NF-e ou NFS-e que o escritório já emite).
+4. **Se estourar o pacote, avisar antes** (Parar / Seguir, com R$ 4 escrito).
+5. **Leitura da nota**: NCM, estado, município, ISS, valor + **sugestão com artigo e data**.
+6. **Firmar** (contador, CRC → log).
+7. **Se a nota voltar**: SEFAZ e prefeitura **separadas**, com **campo, código e plantão** → voltar à nota.
 
-### J4 — Teto do pacote
-- Usadas 5.980 de 6.000. A próxima nota **passa do teto** → aviso com custo (R$ 4) **antes** → Parar ou Seguir. A decisão é registrada.
+Experiência: *entra, lê, confirma, a nota não volta. Se voltar, sabe o campo e tem telefone.*
 
-### J5 — Contrato
-- Painel do contrato: quem paga, quem indica, vencimento, valores, fila de contratos, última nota, indicadores de rejeição, plantão.
+## 7. Telas
 
-## 4. Telas (inventário)
-
-| # | Tela | Arquivo | Conteúdo-chave | Ações |
+| # | Tela | Modelo | Status | Conteúdo |
 |---|---|---|---|---|
-| T1 | **Contrato de cálculo** (painel) | [01](telas/01-contrato-de-calculo.jpg) | Quem paga / Quem indica / Vencimento; Valores do contrato; Fila de contratos (pendente/confirmada/parada); Nota fiscal de serviço (NCM, UF, município, ISS, valor, situação); Base legal aberta; Contador; Rejeições SEFAZ/Prefeitura; Plantão | **Firmar** |
-| T2 | **Leitura da nota** | [04](telas/04-leitura-da-nota.jpg) | Campos extraídos; card "Sugestão IBS/CBS" com base legal e aviso "Sugestão, não decisão. A IA não inventa norma." | **Ir para firmar** |
-| T3 | **Nota voltou** | [02](telas/02-nota-voltou.jpg) | Lista de rejeições (órgão, código, campo); "A IA aponta o campo. Não julga o Fisco."; Plantão | **Voltar à nota** |
-| T4 | **Teto do pacote** | [05](telas/05-teto-do-pacote.jpg) | Plano, autorizadas, usadas, aviso de excedente | **Parar** / **Seguir** |
-| D1 | **Motor** (diagrama) | [03](telas/03-motor.jpg) | Entradas → base interna → modelo → sugestão / não sugere → contador → log | — |
+| T0 | Entrar + escolher CNPJ | — (novo) | criar | Login simples; lista dos CNPJs do dono autorizados |
+| T1 | **Contrato de cálculo** (tela escolhida) | [01](telas/01-contrato-de-calculo.jpg) | ajustar | Quem paga (dono), quem indica (escritório), preço R$ 18 mil, 1º CNPJ R$ 9 mil, próximo cheio, vencimento dia 1; nota (NCM, UF, município, ISS, valor); base legal aberta (LC 214 + portaria, "sugestão, não decisão"); CRC de quem confirma; SEFAZ e prefeitura com mesmo peso; plantão no rodapé. **Remover a "Fila de contratos"** (saiu do acordo). |
+| T2 | Teto do pacote | [05](telas/05-teto-do-pacote.jpg) | manter | Pacote, autorizadas, usadas, "próxima passa do teto", "Excedente R$ 4, escrito antes", Parar / Seguir |
+| T3 | Leitura da nota | [04](telas/04-leitura-da-nota.jpg) | manter | Campos lidos + card "Sugestão IBS/CBS" com artigo e data; "Ir para firmar" |
+| T4 | Firmar | bloco direito da [01](telas/01-contrato-de-calculo.jpg) | extrair | Base legal aberta, nome + CRC, botão Firmar |
+| T5 | Nota voltou | [02](telas/02-nota-voltou.jpg) | manter | Rejeição SEFAZ e Prefeitura separadas (código, campo), "A IA aponta o campo. Não julga o Fisco.", plantão, "Voltar à nota" |
+| L1 | Landing | — (novo) | criar | Uma frase: **"A nota sem volta."** Preço e vencimento na primeira dobra. Botão **"Ver na sua nota"**. Sem explicar a reforma. |
 
-Observação de design: as telas são minimalistas, frases curtas e afirmativas, um botão principal escuro por tela.
-Cores semânticas: verde = ok/confirmado, vermelho = rejeição, roxo = IA/sugestão, azul = informação.
+Linguagem: português curto, afirmativo, sem jargão de compliance.
 
-## 5. Requisitos funcionais
+## 8. Requisitos funcionais
+
+**Acesso e contrato** (fora do motor)
+- RF01 Login simples. RF02 Dono autoriza CNPJs; usuário escolhe o CNPJ antes de subir XML.
+- RF03 Contrato por CNPJ: pacote, preço, vencimento dia 1, quem paga, escritório que indica.
 
 **Leitura**
-- RF01 Receber XML de NF-e/NFS-e (upload no POC) e validar estrutura.
-- RF02 Extrair NCM (ou código de serviço/NBS 🔎), UF, município (código IBGE), indicador de ISS, valor, emitente/CNPJ.
-- RF03 Exibir a leitura em formato chave/valor (T2).
+- RF04 Upload de XML **NF-e e NFS-e**; extrair NCM (ou item de serviço), UF, município, ISS, valor, data, CNPJ.
+- RF05 Validar que o CNPJ do XML é o CNPJ escolhido.
 
-**Motor de sugestão**
-- RF04 Consultar a base interna filtrando por vigência (data da nota) e jurisdição (UF/município).
-- RF05 O modelo escolhe **apenas** entre os artigos recuperados (saída restrita a IDs da base).
-- RF06 Se nenhum artigo for aplicável ou a confiança for baixa → retornar "não sugere" com motivo.
-- RF07 Sugestão traz: CST/`cClassTrib` IBS/CBS 🔎, alíquota/redução quando houver, **artigo**, **data da norma**, justificativa curta.
-- RF08 Validação determinística pós-modelo: o artigo retornado existe, está vigente e cobre o NCM/serviço.
+**Motor**
+- RF06 Recuperar candidatos na base interna por **vigência (data da nota) × UF × município × NCM/serviço**.
+- RF07 O modelo escolhe **um ID da base** ou **não responde**. Saída fechada.
+- RF08 Validação determinística: artigo existe, vigente, cobre o item.
+- RF09 Sugestão de: tributo legado (ICMS/ISS 🔎), **IBS/CBS** (CST, `cClassTrib`, alíquota 🔎), ISS municipal — cada um com **artigo e data**.
 
-**Firma**
-- RF09 Contador identificado por nome + CRC confirma, edita ou rejeita a sugestão.
-- RF10 "Firmar" gera registro imutável: nota (hash), sugestão, decisão final, artigo, versão da base, CRC, usuário, horário.
+**Firma e log**
+- RF10 Contador confirma com nome + CRC; pode editar ou recusar.
+- RF11 Log **imutável**: CRC, artigo, data da norma, horário (+ versão da base, hash do XML, usuário, decisão).
+
+**Pacote**
+- RF12 Contador de notas autorizadas por contrato/ano; tetos 2.400 / 6.000 / 12.000.
+- RF13 **Avisar antes** da nota que estoura; registrar Parar/Seguir e o valor do excedente.
+- RF14 Reemissão de nota rejeitada devolvida **não consome** pacote (vínculo nota original ↔ reemissão).
 
 **Rejeição**
-- RF11 Receber retorno da SEFAZ/Prefeitura (no POC: simulado/importado) com código e campo.
-- RF12 Mapear código → campo → explicação curta; destacar o campo na leitura ao "Voltar à nota".
+- RF15 Escritório devolve o **retorno da rejeição** (XML/arquivo/texto de retorno) → sistema registra órgão, código, campo.
+- RF16 Tabela código → campo → frase curta; destacar o campo na leitura.
+- RF17 Indicador de **parada** por CNPJ e escritório, SEFAZ e prefeitura separados, por semana.
 
-**Pacote/teto**
-- RF13 Contar notas por contrato no período; avisar ao atingir o teto **antes** da próxima nota.
-- RF14 Registrar a decisão Parar/Seguir e calcular o excedente (R$ 4/nota).
+**Plantão**
+- RF18 Telefone do plantão visível no rodapé e na tela de rejeição. Atendimento humano (fora do sistema).
 
-**Contrato**
-- RF15 Cadastro de contrato: pagador, indicador (escritório), CNPJs, valor anual, desconto do 1º CNPJ, vencimento, plano.
-- RF16 Fila de contratos por status (pendente/confirmada/parada).
-- RF17 Indicadores de rejeição por órgão (antes × depois) e contato do plantão.
+## 9. Fora do v0
+ERP e integrações; busca na web em tempo real; emissão/transmissão da nota; guia de recolhimento; cobrança automatizada; fila de contratos; segundo estado.
 
-## 6. Requisitos não funcionais
-- **Rastreabilidade/auditoria**: log append-only; reter ≥ 5 anos (prazo decadencial fiscal) 🔎.
-- **Versionamento da base legal**: toda norma com data de publicação e vigência; sugestão referencia a versão.
-- **Determinismo onde importa**: regras e validações em código; o LLM só escolhe dentro de opções fechadas.
-- **LGPD**: XML contém dados de terceiros (destinatário). Criptografia em repouso, segregação por cliente (multi-tenant).
-- **Segurança**: o contador firma com identidade forte (no produto: login + 2FA; certificado digital 🔎).
-- **Disponibilidade**: emissão é horário comercial crítico; plantão humano como fallback.
+## 10. Requisitos não funcionais
+- Log append-only e retenção ≥ 5 anos 🔎; base legal versionada por data.
+- Regras (pacote, preço, vigência, validação) **no servidor**, em código; LLM só escolhe dentro de opções fechadas.
+- LGPD: XML com dados de terceiros → criptografia em repouso e isolamento por escritório/dono.
+- Disclaimer em toda sugestão: não é parecer e não substitui contador.
 
-## 7. Arquitetura técnica
+## 11. Arquitetura
 
-### 7.1 Motor (diagrama D1, detalhado)
+### 11.1 Motor
 ```
-XML ──► Parser ──► Campos (NCM, UF, município, ISS, valor, data)
-                        │
-                        ▼
-              Recuperação na BASE INTERNA  (filtro: vigência × UF/município × NCM/serviço)
-                        │  candidatos [art_id...]
-                        ▼
-              LLM com saída estruturada: escolher art_id ∈ candidatos  |  "nao_sugere"
-                        │
-                        ▼
-              Validador determinístico (art existe? vigente? cobre o NCM?)
-               ├── ok ─────► SUGESTÃO IBS/CBS (artigo + data)
-               └── falha ──► NÃO SUGERE
-                        │
-                        ▼
-              CONTADOR CONFIRMA (CRC) ──► LOG (artigo, CRC, horário, versão da base, hash do XML)
+XML (NF-e | NFS-e) ─► Parser ─► campos (NCM/serviço, UF, município, ISS, valor, data)
+                                   │
+                                   ▼
+                BASE INTERNA (LC 214 · portaria com data · ISS do município)
+                filtro duro: vigência × UF × município × NCM/serviço  → candidatos[]
+                                   │
+                                   ▼
+                LLM, saída estruturada: art_id ∈ candidatos | "nao_responde"
+                                   │
+                                   ▼
+                Validador em código ─ ok ─► SUGESTÃO (tributo, artigo, data)
+                                   └ falha ─► NÃO RESPONDE
+                                   │
+                                   ▼
+                CONTADOR CONFIRMA (CRC) ─► LOG IMUTÁVEL (CRC, artigo, data, horário)
+
+Fora do motor: login · preço · teto
 ```
-O diagrama diz que **login, preço e teto ficam fora** do motor: são módulos separados (identidade, cobrança,
-medição). O motor é uma função pura: `(nota, versão_da_base) → sugestão | não_sugere`.
 
-### 7.2 Modelo de dados (mínimo)
-- `cliente` (empresa, CNPJ, quem paga), `escritorio` (indicador), `contrato` (valor_anual, desconto_primeiro_cnpj,
-  vencimento_dia, plano_id, status: pendente|confirmada|parada), `contrato_cnpj`.
-- `plano` (nome, notas_autorizadas, preco_excedente).
-- `norma` (id, tipo LC/portaria, número, artigo, texto, data_publicacao, vigencia_inicio/fim, escopo NCM/serviço/UF/município, versão).
-- `iss_municipio` (código IBGE, regra/alíquota, vigência).
-- `nota` (id, cliente, xml_hash, xml, campos extraídos, status: lida|sugerida|firmada|autorizada|rejeitada).
-- `sugestao` (nota_id, norma_id|null, resultado, justificativa, modelo, versão_base, criado_em).
-- `firma` (nota_id, sugestao_id, decisao final, contador_nome, crc, usuario_id, firmado_em) — **append-only**.
-- `rejeicao` (nota_id, orgao SEFAZ|PREFEITURA, codigo, campo, mensagem, recebida_em).
-- `consumo` (contrato_id, periodo, usadas) e `decisao_teto` (contrato_id, nota_id, parar|seguir, valor_excedente, em).
-- `contador` (nome, crc, uf_crc).
+### 11.2 Modelo de dados
+- `dono`, `escritorio` (UF, porte), `cnpj` (dono_id, escritorio_id, autorizado_em)
+- `contrato` (cnpj_id, pacote: entrada|meio|cheio, preco, teto_notas, vencimento_dia=1, inicio, fim)
+- `norma` (id, fonte: LC214|portaria|ISS, artigo, texto, data_publicacao, vigencia_inicio/fim, escopo: NCM/serviço/UF/município, versao_base)
+- `nota` (cnpj_id, tipo NF-e|NFS-e, chave, xml_hash, campos, status: lida|sugerida|firmada|autorizada|voltou, nota_origem_id)
+- `sugestao` (nota_id, tributo, norma_id|null, resultado, justificativa, versao_base)
+- `firma` (nota_id, sugestao_id, decisao, contador_nome, crc, usuario_id, firmado_em) — **append-only**
+- `rejeicao` (nota_id, orgao: SEFAZ|PREFEITURA, codigo, campo, mensagem, recebida_em)
+- `consumo` (contrato_id, autorizadas) e `decisao_teto` (contrato_id, nota_id, parar|seguir, excedente_valor, em)
 
-### 7.3 API (POC)
+### 11.3 API (v0)
 | Método | Rota | Função |
 |---|---|---|
-| POST | `/notas` | Upload de XML → leitura |
-| POST | `/notas/{id}/sugestao` | Roda o motor |
-| POST | `/notas/{id}/firma` | Contador firma (CRC) |
-| POST | `/notas/{id}/rejeicoes` | Registra retorno simulado SEFAZ/Prefeitura |
-| GET | `/contratos/{id}/painel` | Dados do T1 |
-| GET | `/contratos/{id}/teto` | Uso do pacote; POST `/contratos/{id}/teto/decisao` |
+| GET | `/cnpjs` | CNPJs autorizados do dono |
+| GET | `/contratos/{cnpj}` | Tela T1 |
+| GET | `/contratos/{cnpj}/pacote` | Uso e teto; POST `/pacote/decisao` (Parar/Seguir) |
+| POST | `/notas` | Sobe XML → leitura (checa teto antes) |
+| POST | `/notas/{id}/sugestao` | Motor |
+| POST | `/notas/{id}/firma` | Contador firma |
+| POST | `/notas/{id}/retorno` | Escritório devolve rejeição |
+| GET | `/parada?cnpj=&semana=` | Indicador de parada |
 | GET | `/log` | Trilha de auditoria |
 
-## 8. Pontos de atenção encontrados nas telas
-1. **NCM 6104.43.00 é mercadoria** (vestuário de malha), mas a tela diz "Nota fiscal de **serviço**" com **ISS = sim**.
-   Mercadoria → NF-e/ICMS; serviço → NFS-e/ISS, classificado por código de serviço (LC 116 / NBS). O POC precisa
-   decidir: foco em NF-e (NCM), NFS-e (serviço) ou ambos. Provavelmente o exemplo é ilustrativo.
-2. **"LC 214, art. X"** é placeholder — a base inicial precisa ser curada (quais artigos/anexos entram).
-3. **"Nota da sexta passou"** sugere notificação de status da última nota. 🔎
-4. **"18 para 2"**: confirmar se é antes × depois (métrica de impacto) e em qual período.
-5. A tela T1 mistura **visão comercial** (contrato, fila) com **operacional** (nota, firma). No produto, separar em
-   "Contrato" e "Nota"; no POC pode ficar em um painel único, como no modelo.
+## 12. Mercado e concorrência
+| Player | Foco | Por que não é o alvo |
+|---|---|---|
+| Synchro | ~400 grupos, 44 mil estabelecimentos | Projeto em ERP |
+| Sovos | Milhares de empresas | Motor de cálculo para grupo |
+| Dootax | >1.000 grupos, R$ 6 bi/mês | Forte em guia |
+| Domínio | >30 mil escritórios | Sistema do escritório (potencial fonte do XML 🔎) |
+
+Buraco mirado: **a nota do médio que a prefeitura devolve na sexta.**
+Contexto: 1.501 h/ano de conformidade no Brasil (Banco Mundial) vs. ~233 média mundial; custo de conformidade ~R$ 228 bi/ano (IBPT); transição até 2033.
+
+## 13. Ida ao mercado
+- Um estado → **10 escritórios** antes de abrir outro → **~20 CNPJs** autorizados por escritório (≈ 200 CNPJs).
+- Ciclo: semana 1 um escritório; semanas 2–4 parada medida; dia 1 renova ou sai.
+- Conta do US$ 1 bi: dezenas de milhões de US$ de receita recorrente → a ~US$ 3 mil/CNPJ, dezenas de milhares de CNPJs. Ano 1 é amostra; o número mora na **renovação do dia 1** e em **não ter implantação por prefeitura**.
+
+## 14. Riscos
+- Curadoria da base (sobretudo ISS por município) é o gargalo e o ativo.
+- Responsabilidade: "quem assina responde" → termo claro, firma por CRC, disclaimer.
+- Se a parada não cair na semana, não há venda — a medição tem de ser confiável desde o dia 1.
