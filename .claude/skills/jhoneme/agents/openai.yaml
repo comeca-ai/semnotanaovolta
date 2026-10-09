@@ -1,0 +1,6 @@
+interface:
+  display_name: "Jhoneme"
+  short_description: "Cloudflare: código, DevOps, custos e estratégia"
+  default_prompt: "Use $jhoneme para estudar meus serviços Cloudflare e propor otimizações de código, execução e custo com evidências atuais."
+policy:
+  allow_implicit_invocation: true
