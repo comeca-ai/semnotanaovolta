@@ -1,1 +1,8 @@
-oi
+# Sem nota não volta
+
+Assistente de classificação IBS/CBS (LC 214) com base legal rastreável, firma por contador (CRC) e explicação de rejeições.
+
+- [Especificação (negócio + técnica)](docs/SPEC.md)
+- [Sugestão de implementação da POC](docs/POC.md)
+- [Perguntas em aberto](docs/PERGUNTAS.md)
+- [Modelos de tela](docs/telas/)
