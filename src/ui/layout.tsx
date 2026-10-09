@@ -100,7 +100,7 @@ input[name=crc]{font-family:var(--mono)}
 /* landing */
 .capa{padding:56px 0 40px}
 .capa h1{font-size:clamp(3.2rem,11vw,6.5rem);line-height:.92;letter-spacing:-.035em;margin-bottom:28px}
-.capa .lead{font-size:1.25rem;max-width:30ch;color:var(--tinta-2)}
+.capa .lead{font-size:1.25rem;max-width:36ch;color:var(--tinta-2)}
 .preco{font-family:var(--serifa);font-size:1.6rem;margin:28px 0 0}
 .preco .num{font-family:var(--serifa);font-size:inherit}
 .tabela-pacotes td,.tabela-pacotes th{padding:12px 8px 12px 0}
