@@ -91,16 +91,23 @@ app.get('/', (c) =>
     >
       <section class="capa">
         <h1>A nota sem volta.</h1>
-        <p class="lead">Seu contador confirma o imposto na nota, com artigo e data. A nota sai e não volta.</p>
+        <p class="lead">Seu contador confirma o imposto na nota, com artigo e data. Na sexta, sem susto.</p>
         <p class="preco">R$ 9 mil por ano no primeiro CNPJ. R$ 18 mil nos próximos.</p>
         <p class="mini" style="margin-top:6px">Vence dia 1.</p>
         <div class="acoes"><a class="botao" href="/entrar">Ver na sua nota</a></div>
       </section>
 
       <section class="folha">
-        <p>Se a nota voltar, você sabe o campo e tem telefone.</p>
-        <p>Plantão: sexta, 18h às 22h. Sábado, 9h às 12h.</p>
-        <p>Quem indica: seu escritório contábil. Quem paga: você.</p>
+        <p>Se a nota voltar, o contador sabe o campo e tem telefone.</p>
+        <p>Plantão: sexta, 18h às 22h. Sábado, 9h às 12h. <strong class="mono">{c.env.PLANTAO_TELEFONE}</strong></p>
+        <p>Quem indica: o escritório contábil. Quem paga: o dono da empresa.</p>
+      </section>
+
+      <section class="folha">
+        <h2>Como se prova.</h2>
+        <p>Cada sugestão cita a norma da base, como a LC 214, e a data dela. Sem norma na base, o sistema não responde.</p>
+        <p>O contador confirma e o CRC fica no log.</p>
+        <p>Medimos a parada toda semana, SEFAZ e prefeitura separadas. No dia 1, você renova ou sai.</p>
       </section>
 
       <section class="folha">
@@ -112,15 +119,31 @@ app.get('/', (c) =>
           <tbody>
             <tr><td>Entrada · primeiro CNPJ</td><td class="num">até 2.400</td><td class="dir num">R$ 9 mil</td></tr>
             <tr><td>Meio · próximo CNPJ ou renovação</td><td class="num">até 6.000</td><td class="dir num">R$ 18 mil</td></tr>
-            <tr><td>Cheio · parada já caída</td><td class="num">até 12.000</td><td class="dir num">R$ 24 mil</td></tr>
+            <tr><td>Cheio · só depois que a parada cair</td><td class="num">até 12.000</td><td class="dir num">R$ 24 mil</td></tr>
           </tbody>
         </table>
-        <p style="margin-top:14px">Acima do teto do seu pacote: R$ 4 por nota, avisado antes da nota que passa.</p>
+        <p style="margin-top:14px">O Cheio não se compra. Abre quando a parada cai no seu CNPJ, e quem mede é o sistema, não o vendedor.</p>
+        <p>Acima do teto do seu pacote: R$ 4 por nota, avisado antes da nota que passa.</p>
         <p>Nota devolvida e reemitida não conta de novo. Vence dia 1, por CNPJ. Sem projeto, sem implantação.</p>
         <div class="acoes"><a class="botao" href="/entrar">Ver na sua nota</a></div>
       </section>
 
-      <p class="mini" style="margin-top:40px">Sugestão, não decisão. Não é parecer e não substitui contador.</p>
+      <p class="mini" style="margin-top:40px">Sugestão, não decisão. Não é parecer e não substitui contador. <a href="/termo">Ler o termo</a>.</p>
+    </Layout>,
+  ),
+);
+
+// ---------- termo, aberto a todos ----------
+
+app.get('/termo', (c) =>
+  c.html(
+    <Layout titulo="Termo de uso · A nota sem volta" plantao={plantao(c)}>
+      <h1>Termo de uso</h1>
+      <p class="sub">É o mesmo texto que dono e contador aceitam antes do primeiro XML. Sem termo aceito, a nota não sobe.</p>
+      <ol style="padding-left:1.2rem;margin:0 0 24px">
+        {TERMO.map((x) => <li style="margin:0 0 8px">{x}</li>)}
+      </ol>
+      <div class="acoes"><a class="botao" href="/entrar">Ver na sua nota</a><a href="/">Voltar</a></div>
     </Layout>,
   ),
 );
@@ -138,6 +161,12 @@ app.get('/entrar', (c) =>
         <div class="acoes"><button class="botao" type="submit">Receber o link</button></div>
       </form>
       <p class="mini" style="margin-top:20px">O link vale por 15 minutos e uma vez só.</p>
+      <ol class="mini" style="margin:20px 0 0;padding-left:1.2rem;line-height:1.8">
+        <li>Você entra pelo link.</li>
+        <li>Escolhe o CNPJ.</li>
+        <li>Sobe o XML da nota. Vê a sugestão, com artigo e data.</li>
+        <li>O contador firma.</li>
+      </ol>
     </>
   )),
 );
